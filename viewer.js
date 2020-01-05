@@ -1022,8 +1022,7 @@ var PDFViewerApplication = {
 					// get the pdf file plus all it's required get params (if exists)
 					let getEqualsIndex = fileParamKeyValue.indexOf("=");
 					let pdfFile = fileParamKeyValue.substring(getEqualsIndex+1);
-			  */
-			  var base64 = 'INSERT_DATA_HERE';
+			  */			 
 			  var raw = atob(base64);
 			  var uint8Array = new Uint8Array(raw.length);
 			  for (var i = 0; i < raw.length; i++) {
