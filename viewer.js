@@ -1022,7 +1022,7 @@ var PDFViewerApplication = {
 					// get the pdf file plus all it's required get params (if exists)
 					let getEqualsIndex = fileParamKeyValue.indexOf("=");
 					let pdfFile = fileParamKeyValue.substring(getEqualsIndex+1);
-
+					var docInitParams = {data: INSERT_DATA_HERE};
 					var loadingTask = (0, _pdfjsLib.getDocument)(pdfFile);
 
 
