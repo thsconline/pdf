@@ -1013,7 +1013,7 @@ var PDFViewerApplication = {
               }
 
 				// EDIT THIS LINE FOR PRODUCTION
-					let _realURL =  window.location.href;
+			/*		let _realURL =  window.location.href;
 
 					// split away the html and get the file=xxxx
 					let getParamsIndex = _realURL.indexOf("?");
@@ -1022,11 +1022,15 @@ var PDFViewerApplication = {
 					// get the pdf file plus all it's required get params (if exists)
 					let getEqualsIndex = fileParamKeyValue.indexOf("=");
 					let pdfFile = fileParamKeyValue.substring(getEqualsIndex+1);
-					var docInitParams = {data: INSERT_DATA_HERE};
-					var loadingTask = (0, _pdfjsLib.getDocument)(pdfFile);
-
-
-
+			  */
+			  var base64 = 'INSERT_DATA_HERE';
+			  var raw = atob(base64);
+			  var uint8Array = new Uint8Array(raw.length);
+			  for (var i = 0; i < raw.length; i++) {
+			    uint8Array[i] = raw.charCodeAt(i);
+			  }			 	
+					var dataParams = {data: uint8Array};
+					var loadingTask = (0, _pdfjsLib.getDocument)(dataParams);
 
               // loadingTask = (0, _pdfjsLib.getDocument)(parameters);
               this.pdfLoadingTask = loadingTask;
