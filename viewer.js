@@ -1023,7 +1023,7 @@ var PDFViewerApplication = {
 					let getEqualsIndex = fileParamKeyValue.indexOf("=");
 					let pdfFile = fileParamKeyValue.substring(getEqualsIndex+1);
 			  */			 
-			  var raw = atob(base64);
+			  
 			  var uint8Array = new Uint8Array(raw.length);
 			  for (var i = 0; i < raw.length; i++) {
 			    uint8Array[i] = raw.charCodeAt(i);
