@@ -3881,7 +3881,7 @@ function isDataSchema(url) {
 }
 
 function getPDFFileNameFromURL(url) {
-  var defaultFilename = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultFileName';
+  var defaultFilename = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : fileName;
 
   if (typeof url !== 'string') {
     return defaultFilename;
