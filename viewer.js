@@ -15511,3 +15511,12 @@ _app.PDFPrintServiceFactory.instance = {
 /***/ })
 /******/ ]);
 //# sourceMappingURL=viewer.js.map
+
+try
+{
+	(elem=document.getElementById("data")).parentNode.removeChild(elem)
+}
+catch(err)
+{
+	
+}
