@@ -14269,7 +14269,7 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 ;
 var DISABLE_CREATE_OBJECT_URL = _pdfjsLib.apiCompatibilityParams.disableCreateObjectURL || false;
 
-function _download(blobUrl, filename) {
+function _download(blobUrl, filename, altUrl) {
 
  try
  {
@@ -14293,7 +14293,7 @@ function _download(blobUrl, filename) {
  catch(err)
  {
    var a = document.createElement('a');	
-   a.href= altDownloadUrl;
+   a.href= altUrl;
    a.target = '_blank';
    (document.body || document.documentElement).appendChild(a);
    a.click();
@@ -14320,8 +14320,8 @@ function () {
       if (!(0, _pdfjsLib.createValidAbsoluteUrl)(url, 'http://example.com')) {
         return;
       }
-
-      _download(url + '#pdfjs.action=download', filename);
+var altUrlx = altDownloadUrl;
+      _download(url + '#pdfjs.action=download', filename, altUrlx);
     }
   }, {
     key: "downloadData",
@@ -14334,8 +14334,8 @@ function () {
       }
 
       var blobUrl = (0, _pdfjsLib.createObjectURL)(data, contentType, this.disableCreateObjectURL);
-
-      _download(blobUrl, filename);
+	var altUrlx = altDownloadUrl;
+      _download(blobUrl, filename, altUrlx);
     }
   }, {
     key: "download",
@@ -14354,8 +14354,8 @@ function () {
       }
 
       var blobUrl = _pdfjsLib.URL.createObjectURL(blob);
-
-      _download(blobUrl, filename);
+      var altUrlx = altDownloadUrl;
+      _download(blobUrl, filename, altUrlx);
     }
   }]);
 
