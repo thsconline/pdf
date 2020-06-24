@@ -14270,11 +14270,35 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 var DISABLE_CREATE_OBJECT_URL = _pdfjsLib.apiCompatibilityParams.disableCreateObjectURL || false;
 
 function _download(blobUrl, filename, altUrl) {
-
+ var br="NotChrome";
+ var ver = 1;
+	try
+	{
+		var vx = navigator.userAgent.match(/Chrome\/(\S+)/);
+		var r = vx[0].split('/');
+		br = r[0];
+		ver = -(1-r[1])+1;
+	}
+	
+	
+if(br == "Chrome" && ver > 82)
+{
+   var a = document.createElement('a');	
+   a.href= altUrl;
+   a.target = '_blank';
+   (document.body || document.documentElement).appendChild(a);
+   a.click();
+   a.remove();		
+}
+else
+{
+	
  try
  {
    var a = document.createElement('a');
  
+
+	 
    if (!a.click) {
      throw new Error('DownloadManager: "a.click()" is not supported.');
    }
@@ -14289,7 +14313,7 @@ function _download(blobUrl, filename, altUrl) {
    (document.body || document.documentElement).appendChild(a);
    a.click();
    a.remove();
- }
+ }	
  catch(err)
  {
    var a = document.createElement('a');	
@@ -14299,6 +14323,7 @@ function _download(blobUrl, filename, altUrl) {
    a.click();
    a.remove();	
  }
+}
 
 }
 
