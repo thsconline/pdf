@@ -1,22 +1,3 @@
-function getAgent() {
-    var ua=navigator.userAgent,tem,M=ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || []; 
-    if(/trident/i.test(M[1])){
-        tem=/\brv[ :]+(\d+)/g.exec(ua) || []; 
-        return {name:'IE',version:(tem[1]||'')};
-        }   
-    if(M[1]==='Chrome'){
-        tem=ua.match(/\bOPR|Edge\/(\d+)/)
-        if(tem!=null)   {return {name:'Opera', version:tem[1]};}
-        }   
-    M=M[2]? [M[1], M[2]]: [navigator.appName, navigator.appVersion, '-?'];
-    if((tem=ua.match(/version\/(\d+)/i))!=null) {M.splice(1,1,tem[1]);}
-    return {
-      name: M[0],
-      version: M[1]
-    };
- }	
-
-
 /**
  * @licstart The following is the entire license notice for the
  * Javascript code in this page
@@ -147,8 +128,6 @@ var pdfjsWebApp, pdfjsWebAppOptions;
   __webpack_require__(41);
 }
 
-	
-	
 function getViewerConfiguration() {
   return {
     appContainer: document.body,
@@ -14290,40 +14269,23 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 ;
 var DISABLE_CREATE_OBJECT_URL = _pdfjsLib.apiCompatibilityParams.disableCreateObjectURL || false;
 
-function _download(blobUrl, filename, altUrl) {
+function _download(blobUrl, filename) {
+  var a = document.createElement('a');
 
-	
- try
- {
-   var a = document.createElement('a');
- 
+  if (!a.click) {
+    throw new Error('DownloadManager: "a.click()" is not supported.');
+  }
 
-	 
-   if (!a.click) {
-     throw new Error('DownloadManager: "a.click()" is not supported.');
-   }
+  a.href = blobUrl;
+  a.target = '_parent';
 
-   a.href = blobUrl;
-   a.target = '_parent';
+  if ('download' in a) {
+    a.download = filename;
+  }
 
-   if ('download' in a) {
-     a.download = filename;
-   }
- 
-   (document.body || document.documentElement).appendChild(a);
-   a.click();
-   a.remove();
- }	
- catch(err)
- {
-   var a = document.createElement('a');	
-   a.href= altUrl;
-   a.target = '_blank';
-   (document.body || document.documentElement).appendChild(a);
-   a.click();
-   a.remove();	
- }
-
+  (document.body || document.documentElement).appendChild(a);
+  a.click();
+  a.remove();
 }
 
 var DownloadManager =
@@ -14344,22 +14306,9 @@ function () {
       if (!(0, _pdfjsLib.createValidAbsoluteUrl)(url, 'http://example.com')) {
         return;
       }
-	var altUrlx = altDownloadUrl;
-	var me = getAgent();
-	if(me.name == "Chrome" && me.version > 82)
-	{
-	   var a = document.createElement('a');	
-	   a.href= altUrlx;
-	   a.target = '_blank';
-	   (document.body || document.documentElement).appendChild(a);
-	   a.click();
-	   a.remove();		
-	}
-	else
-	{    
-	      _download(url + '#pdfjs.action=download', filename, altUrlx);
-	}
-}
+
+      _download(url + '#pdfjs.action=download', filename);
+    }
   }, {
     key: "downloadData",
     value: function downloadData(data, filename, contentType) {
@@ -14371,21 +14320,8 @@ function () {
       }
 
       var blobUrl = (0, _pdfjsLib.createObjectURL)(data, contentType, this.disableCreateObjectURL);
-	var altUrlx = altDownloadUrl;
-	var me = getAgent();
-	if(me.name == "Chrome" && me.version > 82)
-	{
-	   var a = document.createElement('a');	
-	   a.href= altUrlx;
-	   a.target = '_blank';
-	   (document.body || document.documentElement).appendChild(a);
-	   a.click();
-	   a.remove();		
-	}
-	else
-	{    
-	      _download(blobUrl, filename, altUrlx);
-	}
+
+      _download(blobUrl, filename);
     }
   }, {
     key: "download",
@@ -14403,23 +14339,9 @@ function () {
         return;
       }
 
-      var blobUrl = _pdfjsLib.URL.createObjectURL(blob);      
-	var altUrlx = altDownloadUrl;
-	var me = getAgent();
-	if(me.name == "Chrome" && me.version > 82)
-	{
-	   var a = document.createElement('a');	
-	   a.href= altUrlx;
-	   a.target = '_blank';
-	   (document.body || document.documentElement).appendChild(a);
-	   a.click();
-	   a.remove();		
-	}
-	else
-	{   
-	      _download(blobUrl, filename, altUrlx);
-	}	
-	
+      var blobUrl = _pdfjsLib.URL.createObjectURL(blob);
+
+      _download(blobUrl, filename);
     }
   }]);
 
@@ -14873,6 +14795,740 @@ document.webL10n = function (window, document, undefined) {
     }
 
     for (var i = 0; i < langCount; i++) {
+      var resource = new L10nResourceLink(langLinks[i]);
+      resource.load(lang, onResourceLoaded);
+    }
+  }
+
+  function clear() {
+    gL10nData = {};
+    gTextData = '';
+    gLanguage = '';
+  }
+
+  function getPluralRules(lang) {
+    var locales2rules = {
+      'en': 3,
+      'ja': 0,
+    };
+
+    function isIn(n, list) {
+      return list.indexOf(n) !== -1;
+    }
+
+    function isBetween(n, start, end) {
+      return start <= n && n <= end;
+    }
+
+    var pluralRules = {
+      '0': function _(n) {
+        return 'other';
+      },
+      '1': function _(n) {
+        if (isBetween(n % 100, 3, 10)) return 'few';
+        if (n === 0) return 'zero';
+        if (isBetween(n % 100, 11, 99)) return 'many';
+        if (n == 2) return 'two';
+        if (n == 1) return 'one';
+        return 'other';
+      },
+      '2': function _(n) {
+        if (n !== 0 && n % 10 === 0) return 'many';
+        if (n == 2) return 'two';
+        if (n == 1) return 'one';
+        return 'other';
+      },
+      '3': function _(n) {
+        if (n == 1) return 'one';
+        return 'other';
+      },
+      '4': function _(n) {
+        if (isBetween(n, 0, 1)) return 'one';
+        return 'other';
+      },
+      '5': function _(n) {
+        if (isBetween(n, 0, 2) && n != 2) return 'one';
+        return 'other';
+      },
+      '6': function _(n) {
+        if (n === 0) return 'zero';
+        if (n % 10 == 1 && n % 100 != 11) return 'one';
+        return 'other';
+      },
+      '7': function _(n) {
+        if (n == 2) return 'two';
+        if (n == 1) return 'one';
+        return 'other';
+      },
+      '8': function _(n) {
+        if (isBetween(n, 3, 6)) return 'few';
+        if (isBetween(n, 7, 10)) return 'many';
+        if (n == 2) return 'two';
+        if (n == 1) return 'one';
+        return 'other';
+      },
+      '9': function _(n) {
+        if (n === 0 || n != 1 && isBetween(n % 100, 1, 19)) return 'few';
+        if (n == 1) return 'one';
+        return 'other';
+      },
+      '10': function _(n) {
+        if (isBetween(n % 10, 2, 9) && !isBetween(n % 100, 11, 19)) return 'few';
+        if (n % 10 == 1 && !isBetween(n % 100, 11, 19)) return 'one';
+        return 'other';
+      },
+      '11': function _(n) {
+        if (isBetween(n % 10, 2, 4) && !isBetween(n % 100, 12, 14)) return 'few';
+        if (n % 10 === 0 || isBetween(n % 10, 5, 9) || isBetween(n % 100, 11, 14)) return 'many';
+        if (n % 10 == 1 && n % 100 != 11) return 'one';
+        return 'other';
+      },
+      '12': function _(n) {
+        if (isBetween(n, 2, 4)) return 'few';
+        if (n == 1) return 'one';
+        return 'other';
+      },
+      '13': function _(n) {
+        if (isBetween(n % 10, 2, 4) && !isBetween(n % 100, 12, 14)) return 'few';
+        if (n != 1 && isBetween(n % 10, 0, 1) || isBetween(n % 10, 5, 9) || isBetween(n % 100, 12, 14)) return 'many';
+        if (n == 1) return 'one';
+        return 'other';
+      },
+      '14': function _(n) {
+        if (isBetween(n % 100, 3, 4)) return 'few';
+        if (n % 100 == 2) return 'two';
+        if (n % 100 == 1) return 'one';
+        return 'other';
+      },
+      '15': function _(n) {
+        if (n === 0 || isBetween(n % 100, 2, 10)) return 'few';
+        if (isBetween(n % 100, 11, 19)) return 'many';
+        if (n == 1) return 'one';
+        return 'other';
+      },
+      '16': function _(n) {
+        if (n % 10 == 1 && n != 11) return 'one';
+        return 'other';
+      },
+      '17': function _(n) {
+        if (n == 3) return 'few';
+        if (n === 0) return 'zero';
+        if (n == 6) return 'many';
+        if (n == 2) return 'two';
+        if (n == 1) return 'one';
+        return 'other';
+      },
+      '18': function _(n) {
+        if (n === 0) return 'zero';
+        if (isBetween(n, 0, 2) && n !== 0 && n != 2) return 'one';
+        return 'other';
+      },
+      '19': function _(n) {
+        if (isBetween(n, 2, 10)) return 'few';
+        if (isBetween(n, 0, 1)) return 'one';
+        return 'other';
+      },
+      '20': function _(n) {
+        if ((isBetween(n % 10, 3, 4) || n % 10 == 9) && !(isBetween(n % 100, 10, 19) || isBetween(n % 100, 70, 79) || isBetween(n % 100, 90, 99))) return 'few';
+        if (n % 1000000 === 0 && n !== 0) return 'many';
+        if (n % 10 == 2 && !isIn(n % 100, [12, 72, 92])) return 'two';
+        if (n % 10 == 1 && !isIn(n % 100, [11, 71, 91])) return 'one';
+        return 'other';
+      },
+      '21': function _(n) {
+        if (n === 0) return 'zero';
+        if (n == 1) return 'one';
+        return 'other';
+      },
+      '22': function _(n) {
+        if (isBetween(n, 0, 1) || isBetween(n, 11, 99)) return 'one';
+        return 'other';
+      },
+      '23': function _(n) {
+        if (isBetween(n % 10, 1, 2) || n % 20 === 0) return 'one';
+        return 'other';
+      },
+      '24': function _(n) {
+        if (isBetween(n, 3, 10) || isBetween(n, 13, 19)) return 'few';
+        if (isIn(n, [2, 12])) return 'two';
+        if (isIn(n, [1, 11])) return 'one';
+        return 'other';
+      }
+    };
+    var index = locales2rules[lang.replace(/-.*$/, '')];
+
+    if (!(index in pluralRules)) {
+      console.warn('plural form unknown for [' + lang + ']');
+      return function () {
+        return 'other';
+      };
+    }
+
+    return pluralRules[index];
+  }
+
+  gMacros.plural = function (str, param, key, prop) {
+    var n = parseFloat(param);
+    if (isNaN(n)) return str;
+    if (prop != gTextProp) return str;
+
+    if (!gMacros._pluralRules) {
+      gMacros._pluralRules = getPluralRules(gLanguage);
+    }
+
+    var index = '[' + gMacros._pluralRules(n) + ']';
+
+    if (n === 0 && key + '[zero]' in gL10nData) {
+      str = gL10nData[key + '[zero]'][prop];
+    } else if (n == 1 && key + '[one]' in gL10nData) {
+      str = gL10nData[key + '[one]'][prop];
+    } else if (n == 2 && key + '[two]' in gL10nData) {
+      str = gL10nData[key + '[two]'][prop];
+    } else if (key + index in gL10nData) {
+      str = gL10nData[key + index][prop];
+    } else if (key + '[other]' in gL10nData) {
+      str = gL10nData[key + '[other]'][prop];
+    }
+
+    return str;
+  };
+
+  function getL10nData(key, args, fallback) {
+    var data = gL10nData[key];
+
+    if (!data) {
+      console.warn('#' + key + ' is undefined.');
+
+      if (!fallback) {
+        return null;
+      }
+
+      data = fallback;
+    }
+
+    var rv = {};
+
+    for (var prop in data) {
+      var str = data[prop];
+      str = substIndexes(str, args, key, prop);
+      str = substArguments(str, args, key);
+      rv[prop] = str;
+    }
+
+    return rv;
+  }
+
+  function substIndexes(str, args, key, prop) {
+    var reIndex = /\{\[\s*([a-zA-Z]+)\(([a-zA-Z]+)\)\s*\]\}/;
+    var reMatch = reIndex.exec(str);
+    if (!reMatch || !reMatch.length) return str;
+    var macroName = reMatch[1];
+    var paramName = reMatch[2];
+    var param;
+
+    if (args && paramName in args) {
+      param = args[paramName];
+    } else if (paramName in gL10nData) {
+      param = gL10nData[paramName];
+    }
+
+    if (macroName in gMacros) {
+      var macro = gMacros[macroName];
+      str = macro(str, param, key, prop);
+    }
+
+    return str;
+  }
+
+  function substArguments(str, args, key) {
+    var reArgs = /\{\{\s*(.+?)\s*\}\}/g;
+    return str.replace(reArgs, function (matched_text, arg) {
+      if (args && arg in args) {
+        return args[arg];
+      }
+
+      if (arg in gL10nData) {
+        return gL10nData[arg];
+      }
+
+      console.log('argument {{' + arg + '}} for #' + key + ' is undefined.');
+      return matched_text;
+    });
+  }
+
+  function translateElement(element) {
+    var l10n = getL10nAttributes(element);
+    if (!l10n.id) return;
+    var data = getL10nData(l10n.id, l10n.args);
+
+    if (!data) {
+      console.warn('#' + l10n.id + ' is undefined.');
+      return;
+    }
+
+    if (data[gTextProp]) {
+      if (getChildElementCount(element) === 0) {
+        element[gTextProp] = data[gTextProp];
+      } else {
+        var children = element.childNodes;
+        var found = false;
+
+        for (var i = 0, l = children.length; i < l; i++) {
+          if (children[i].nodeType === 3 && /\S/.test(children[i].nodeValue)) {
+            if (found) {
+              children[i].nodeValue = '';
+            } else {
+              children[i].nodeValue = data[gTextProp];
+              found = true;
+            }
+          }
+        }
+
+        if (!found) {
+          var textNode = document.createTextNode(data[gTextProp]);
+          element.insertBefore(textNode, element.firstChild);
+        }
+      }
+
+      delete data[gTextProp];
+    }
+
+    for (var k in data) {
+      element[k] = data[k];
+    }
+  }
+
+  function getChildElementCount(element) {
+    if (element.children) {
+      return element.children.length;
+    }
+
+    if (typeof element.childElementCount !== 'undefined') {
+      return element.childElementCount;
+    }
+
+    var count = 0;
+
+    for (var i = 0; i < element.childNodes.length; i++) {
+      count += element.nodeType === 1 ? 1 : 0;
+    }
+
+    return count;
+  }
+
+  function translateFragment(element) {
+    element = element || document.documentElement;
+    var children = getTranslatableChildren(element);
+    var elementCount = children.length;
+
+    for (var i = 0; i < elementCount; i++) {
+      translateElement(children[i]);
+    }
+
+    translateElement(element);
+  }
+
+  return {
+    get: function get(key, args, fallbackString) {
+      var index = key.lastIndexOf('.');
+      var prop = gTextProp;
+
+      if (index > 0) {
+        prop = key.substring(index + 1);
+        key = key.substring(0, index);
+      }
+
+      var fallback;
+
+      if (fallbackString) {
+        fallback = {};
+        fallback[prop] = fallbackString;
+      }
+
+      var data = getL10nData(key, args, fallback);
+
+      if (data && prop in data) {
+        return data[prop];
+      }
+
+      return '{{' + key + '}}';
+    },
+    getData: function getData() {
+      return gL10nData;
+    },
+    getText: function getText() {
+      return gTextData;
+    },
+    getLanguage: function getLanguage() {
+      return gLanguage;
+    },
+    setLanguage: function setLanguage(lang, callback) {
+      loadLocale(lang, function () {
+        if (callback) callback();
+      });
+    },
+    getDirection: function getDirection() {
+      var rtlList = ['ar', 'he', 'fa', 'ps', 'ur'];
+      var shortCode = gLanguage.split('-', 1)[0];
+      return rtlList.indexOf(shortCode) >= 0 ? 'rtl' : 'ltr';
+    },
+    translate: translateFragment,
+    getReadyState: function getReadyState() {
+      return gReadyState;
+    },
+    ready: function ready(callback) {
+      if (!callback) {
+        return;
+      } else if (gReadyState == 'complete' || gReadyState == 'interactive') {
+        window.setTimeout(function () {
+          callback();
+        });
+      } else if (document.addEventListener) {
+        document.addEventListener('localized', function once() {
+          document.removeEventListener('localized', once);
+          callback();
+        });
+      }
+    }
+  };
+}(window, document);
+
+/***/ }),
+/* 41 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.PDFPrintService = PDFPrintService;
+
+var _ui_utils = __webpack_require__(5);
+
+var _app = __webpack_require__(1);
+
+var _app_options = __webpack_require__(6);
+
+var _pdfjsLib = __webpack_require__(7);
+
+var activeService = null;
+var overlayManager = null;
+
+function renderPage(activeServiceOnEntry, pdfDocument, pageNumber, size) {
+  var scratchCanvas = activeService.scratchCanvas;
+  var PRINT_RESOLUTION = _app_options.AppOptions.get('printResolution') || 150;
+  var PRINT_UNITS = PRINT_RESOLUTION / 72.0;
+  scratchCanvas.width = Math.floor(size.width * PRINT_UNITS);
+  scratchCanvas.height = Math.floor(size.height * PRINT_UNITS);
+  var width = Math.floor(size.width * _ui_utils.CSS_UNITS) + 'px';
+  var height = Math.floor(size.height * _ui_utils.CSS_UNITS) + 'px';
+  var ctx = scratchCanvas.getContext('2d');
+  ctx.save();
+  ctx.fillStyle = 'rgb(255, 255, 255)';
+  ctx.fillRect(0, 0, scratchCanvas.width, scratchCanvas.height);
+  ctx.restore();
+  return pdfDocument.getPage(pageNumber).then(function (pdfPage) {
+    var renderContext = {
+      canvasContext: ctx,
+      transform: [PRINT_UNITS, 0, 0, PRINT_UNITS, 0, 0],
+      viewport: pdfPage.getViewport({
+        scale: 1,
+        rotation: size.rotation
+      }),
+      intent: 'print'
+    };
+    return pdfPage.render(renderContext).promise;
+  }).then(function () {
+    return {
+      width: width,
+      height: height
+    };
+  });
+}
+
+function PDFPrintService(pdfDocument, pagesOverview, printContainer, l10n) {
+  this.pdfDocument = pdfDocument;
+  this.pagesOverview = pagesOverview;
+  this.printContainer = printContainer;
+  this.l10n = l10n || _ui_utils.NullL10n;
+  this.disableCreateObjectURL = pdfDocument.loadingParams['disableCreateObjectURL'];
+  this.currentPage = -1;
+  this.scratchCanvas = document.createElement('canvas');
+}
+
+PDFPrintService.prototype = {
+  layout: function layout() {
+    this.throwIfInactive();
+    var body = document.querySelector('body');
+    body.setAttribute('data-pdfjsprinting', true);
+    var hasEqualPageSizes = this.pagesOverview.every(function (size) {
+      return size.width === this.pagesOverview[0].width && size.height === this.pagesOverview[0].height;
+    }, this);
+
+    if (!hasEqualPageSizes) {
+      console.warn('Not all pages have the same size. The printed ' + 'result may be incorrect!');
+    }
+
+    this.pageStyleSheet = document.createElement('style');
+    var pageSize = this.pagesOverview[0];
+    this.pageStyleSheet.textContent = '@supports ((size:A4) and (size:1pt 1pt)) {' + '@page { size: ' + pageSize.width + 'pt ' + pageSize.height + 'pt;}' + '}';
+    body.appendChild(this.pageStyleSheet);
+  },
+  destroy: function destroy() {
+    if (activeService !== this) {
+      return;
+    }
+
+    this.printContainer.textContent = '';
+
+    if (this.pageStyleSheet) {
+      this.pageStyleSheet.remove();
+      this.pageStyleSheet = null;
+    }
+
+    this.scratchCanvas.width = this.scratchCanvas.height = 0;
+    this.scratchCanvas = null;
+    activeService = null;
+    ensureOverlay().then(function () {
+      if (overlayManager.active !== 'printServiceOverlay') {
+        return;
+      }
+
+      overlayManager.close('printServiceOverlay');
+    });
+  },
+  renderPages: function renderPages() {
+    var _this = this;
+
+    var pageCount = this.pagesOverview.length;
+
+    var renderNextPage = function renderNextPage(resolve, reject) {
+      _this.throwIfInactive();
+
+      if (++_this.currentPage >= pageCount) {
+        renderProgress(pageCount, pageCount, _this.l10n);
+        resolve();
+        return;
+      }
+
+      var index = _this.currentPage;
+      renderProgress(index, pageCount, _this.l10n);
+      renderPage(_this, _this.pdfDocument, index + 1, _this.pagesOverview[index]).then(_this.useRenderedPage.bind(_this)).then(function () {
+        renderNextPage(resolve, reject);
+      }, reject);
+    };
+
+    return new Promise(renderNextPage);
+  },
+  useRenderedPage: function useRenderedPage(printItem) {
+    this.throwIfInactive();
+    var img = document.createElement('img');
+    img.style.width = printItem.width;
+    img.style.height = printItem.height;
+    var scratchCanvas = this.scratchCanvas;
+
+    if ('toBlob' in scratchCanvas && !this.disableCreateObjectURL) {
+      scratchCanvas.toBlob(function (blob) {
+        img.src = _pdfjsLib.URL.createObjectURL(blob);
+      });
+    } else {
+      img.src = scratchCanvas.toDataURL();
+    }
+
+    var wrapper = document.createElement('div');
+    wrapper.appendChild(img);
+    this.printContainer.appendChild(wrapper);
+    return new Promise(function (resolve, reject) {
+      img.onload = resolve;
+      img.onerror = reject;
+    });
+  },
+  performPrint: function performPrint() {
+    var _this2 = this;
+
+    this.throwIfInactive();
+    return new Promise(function (resolve) {
+      setTimeout(function () {
+        if (!_this2.active) {
+          resolve();
+          return;
+        }
+
+        print.call(window);
+        setTimeout(resolve, 20);
+      }, 0);
+    });
+  },
+
+  get active() {
+    return this === activeService;
+  },
+
+  throwIfInactive: function throwIfInactive() {
+    if (!this.active) {
+      throw new Error('This print request was cancelled or completed.');
+    }
+  }
+};
+var print = window.print;
+
+window.print = function print() {
+  if (activeService) {
+    console.warn('Ignored window.print() because of a pending print job.');
+    return;
+  }
+
+  ensureOverlay().then(function () {
+    if (activeService) {
+      overlayManager.open('printServiceOverlay');
+    }
+  });
+
+  try {
+    dispatchEvent('beforeprint');
+  } finally {
+    if (!activeService) {
+      console.error('Expected print service to be initialized.');
+      ensureOverlay().then(function () {
+        if (overlayManager.active === 'printServiceOverlay') {
+          overlayManager.close('printServiceOverlay');
+        }
+      });
+      return;
+    }
+
+    var activeServiceOnEntry = activeService;
+    activeService.renderPages().then(function () {
+      return activeServiceOnEntry.performPrint();
+    })["catch"](function () {}).then(function () {
+      if (activeServiceOnEntry.active) {
+        abort();
+      }
+    });
+  }
+};
+
+function dispatchEvent(eventType) {
+  var event = document.createEvent('CustomEvent');
+  event.initCustomEvent(eventType, false, false, 'custom');
+  window.dispatchEvent(event);
+}
+
+function abort() {
+  if (activeService) {
+    activeService.destroy();
+    dispatchEvent('afterprint');
+  }
+}
+
+function renderProgress(index, total, l10n) {
+  var progressContainer = document.getElementById('printServiceOverlay');
+  var progress = Math.round(100 * index / total);
+  var progressBar = progressContainer.querySelector('progress');
+  var progressPerc = progressContainer.querySelector('.relative-progress');
+  progressBar.value = progress;
+  l10n.get('print_progress_percent', {
+    progress: progress
+  }, progress + '%').then(function (msg) {
+    progressPerc.textContent = msg;
+  });
+}
+
+var hasAttachEvent = !!document.attachEvent;
+window.addEventListener('keydown', function (event) {
+  if (event.keyCode === 80 && (event.ctrlKey || event.metaKey) && !event.altKey && (!event.shiftKey || window.chrome || window.opera)) {
+    window.print();
+
+    if (hasAttachEvent) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (event.stopImmediatePropagation) {
+      event.stopImmediatePropagation();
+    } else {
+      event.stopPropagation();
+    }
+
+    return;
+  }
+}, true);
+
+if (hasAttachEvent) {
+  document.attachEvent('onkeydown', function (event) {
+    event = event || window.event;
+
+    if (event.keyCode === 80 && event.ctrlKey) {
+      event.keyCode = 0;
+      return false;
+    }
+  });
+}
+
+if ('onbeforeprint' in window) {
+  var stopPropagationIfNeeded = function stopPropagationIfNeeded(event) {
+    if (event.detail !== 'custom' && event.stopImmediatePropagation) {
+      event.stopImmediatePropagation();
+    }
+  };
+
+  window.addEventListener('beforeprint', stopPropagationIfNeeded);
+  window.addEventListener('afterprint', stopPropagationIfNeeded);
+}
+
+var overlayPromise;
+
+function ensureOverlay() {
+  if (!overlayPromise) {
+    overlayManager = _app.PDFViewerApplication.overlayManager;
+
+    if (!overlayManager) {
+      throw new Error('The overlay manager has not yet been initialized.');
+    }
+
+    overlayPromise = overlayManager.register('printServiceOverlay', document.getElementById('printServiceOverlay'), abort, true);
+    document.getElementById('printCancel').onclick = abort;
+  }
+
+  return overlayPromise;
+}
+
+_app.PDFPrintServiceFactory.instance = {
+  supportsPrinting: true,
+  createPrintService: function createPrintService(pdfDocument, pagesOverview, printContainer, l10n) {
+    if (activeService) {
+      throw new Error('The print service is created and active.');
+    }
+
+    activeService = new PDFPrintService(pdfDocument, pagesOverview, printContainer, l10n);
+    return activeService;
+  }
+};
+
+/***/ })
+/******/ ]);
+//# sourceMappingURL=viewer.js.map
+
+
+
+function configure()
+{
+try
+{
+	PDFViewerApplication.open()
+	(elem=document.getElementById("data")).parentNode.removeChild(elem)
+}
+catch(err)
+{
+	
+}	
+	
+	
+}
+nt; i++) {
       var resource = new L10nResourceLink(langLinks[i]);
       resource.load(lang, onResourceLoaded);
     }
