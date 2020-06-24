@@ -14356,7 +14356,7 @@ var DISABLE_CREATE_OBJECT_URL = _pdfjsLib.apiCompatibilityParams.disableCreateOb
 function _download(blobUrl, filename) {
 
 //CHROME83 fix
-if(browser == "Chrome" && version > 82)
+if(mybrowser == "Chrome" && myversion > 82)
 {
   var a = document.createElement('a');	
   if (!a.click) {
