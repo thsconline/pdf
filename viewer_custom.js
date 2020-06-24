@@ -14279,6 +14279,9 @@ function _download(blobUrl, filename, altUrl) {
 		br = r[0];
 		ver = -(1-r[1])+1;
 	}
+	catch(err)
+	{
+	}
 	
 	
 if(br == "Chrome" && ver > 82)
