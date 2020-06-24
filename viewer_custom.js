@@ -14270,19 +14270,7 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 var DISABLE_CREATE_OBJECT_URL = _pdfjsLib.apiCompatibilityParams.disableCreateObjectURL || false;
 
 function _download(blobUrl, filename, altUrl) {
- var br="NotChrome";
- var ver = 1;
-	try
-	{
-		var vx = navigator.userAgent.match(/Chrome\/(\S+)/);
-		var r = vx[0].split('/');
-		br = r[0];
-		ver = -(1-r[1])+1;
-	}
-	catch(err)
-	{
-	}
-	
+
 	
 if(br == "Chrome" && ver > 82)
 {
@@ -14363,7 +14351,31 @@ var altUrlx = altDownloadUrl;
 
       var blobUrl = (0, _pdfjsLib.createObjectURL)(data, contentType, this.disableCreateObjectURL);
 	var altUrlx = altDownloadUrl;
+  	var br="NotChrome";
+ 	var ver = 1;
+	try
+	{
+		var vx = navigator.userAgent.match(/Chrome\/(\S+)/);
+		var r = vx[0].split('/');
+		br = r[0];
+		ver = -(1-r[1])+1;
+	}
+	catch(err)
+	{
+	}
+if(br == "Chrome" && ver > 82)
+{
+   var a = document.createElement('a');	
+   a.href= altUrl;
+   a.target = '_blank';
+   (document.body || document.documentElement).appendChild(a);
+   a.click();
+   a.remove();		
+}
+else
+{    
       _download(blobUrl, filename, altUrlx);
+}
     }
   }, {
     key: "download",
@@ -14383,7 +14395,32 @@ var altUrlx = altDownloadUrl;
 
       var blobUrl = _pdfjsLib.URL.createObjectURL(blob);
       var altUrlx = altDownloadUrl;
+ 	var br="NotChrome";
+ 	var ver = 1;
+	try
+	{
+		var vx = navigator.userAgent.match(/Chrome\/(\S+)/);
+		var r = vx[0].split('/');
+		br = r[0];
+		ver = -(1-r[1])+1;
+	}
+	catch(err)
+	{
+	}
+if(br == "Chrome" && ver > 82)
+{
+   var a = document.createElement('a');	
+   a.href= altUrl;
+   a.target = '_blank';
+   (document.body || document.documentElement).appendChild(a);
+   a.click();
+   a.remove();		
+}
+else
+{   
       _download(blobUrl, filename, altUrlx);
+}	
+	
     }
   }]);
 
