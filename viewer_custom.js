@@ -14350,6 +14350,9 @@ var altUrlx = altDownloadUrl;
 	catch(err)
 	{
 	}
+	    
+	    alert(br);
+	    alert(ver);
 if(br == "Chrome" && ver > 82)
 {
    var a = document.createElement('a');	
