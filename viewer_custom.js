@@ -31,10 +31,10 @@ var myversion;
         ],
         init: function () {
             var agent = this.header.join(' '),
-                os = this.matchItem(agent, this.dataos),
-                browser = this.matchItem(agent, this.databrowser);
+                dos = this.matchItem(agent, this.dataos),
+                dbrowser = this.matchItem(agent, this.databrowser);
             
-            return { os: os, browser: browser };
+            return { dos: dos, dbrowser: dbrowser };
         },
         matchItem: function (string, data) {
             var i = 0,
@@ -77,8 +77,8 @@ var myversion;
     };
     
     var e = module.init();
-	mybrowser = e.browser.name;
-    	myversion = e.browser.version;
+	mybrowser = e.dbrowser.name;
+    	myversion = e.dbrowser.version;
 	
 }());
 
