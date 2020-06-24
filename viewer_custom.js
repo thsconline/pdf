@@ -14272,18 +14272,6 @@ var DISABLE_CREATE_OBJECT_URL = _pdfjsLib.apiCompatibilityParams.disableCreateOb
 function _download(blobUrl, filename, altUrl) {
 
 	
-if(br == "Chrome" && ver > 82)
-{
-   var a = document.createElement('a');	
-   a.href= altUrl;
-   a.target = '_blank';
-   (document.body || document.documentElement).appendChild(a);
-   a.click();
-   a.remove();		
-}
-else
-{
-	
  try
  {
    var a = document.createElement('a');
@@ -14314,7 +14302,6 @@ else
    a.click();
    a.remove();	
  }
-}
 
 }
 
