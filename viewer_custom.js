@@ -4392,7 +4392,7 @@ var defaultOptions = {
     kind: OptionKind.WORKER
   },
   workerSrc: {
-    value: 'https://web1.thsconline.net/pdf/pdf.worker.js', // FIX FOR PRODUCTION
+    value: 'https://thsconline.github.io/pdf/pdf.worker.js', // FIX FOR PRODUCTION
     kind: OptionKind.WORKER
   }
 };
