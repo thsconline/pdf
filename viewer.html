@@ -43,6 +43,64 @@ See https://github.com/adobe-type-tools/cmap-resources
 const raw = '<?!= data64 ?>';
 const fileName = '<?= fileName  ?>';
 </script>-->
+
+<script src="https://unpkg.com/zstd-codec@0.1.0/zstd-codec.min.js"></script>
+ <script>
+    let raw;      // Uint8Array of the .zst file
+    let base64;   // Final Base64-encoded string of decompressed content
+
+    // Parse "load" param from ?load=filename.zst
+    const params = new URLSearchParams(window.location.search);
+    const fileToLoad = params.get('load');
+
+    if (fileToLoad) {
+      fetch(fileToLoad)
+        .then(response => {
+          if (!response.ok) throw new Error(`Failed to load file: ${response.status}`);
+          return response.arrayBuffer();
+        })
+        .then(arrayBuffer => {
+          raw = new Uint8Array(arrayBuffer);
+
+          // Initialize Zstd decoder
+          ZstdCodec.Run(zstd => {
+            try {
+              const simple = new zstd.Simple();
+              const decompressed = simple.decompress(raw);
+
+              // Convert to Base64
+              base64 = arrayBufferToBase64(decompressed);
+              document.getElementById('output').textContent = base64;
+
+              console.log('✅ Decompressed and encoded to Base64');
+            } catch (err) {
+              console.error('❌ Decompression failed:', err);
+              document.getElementById('output').textContent = 'Decompression failed.';
+            }
+          });
+        })
+        .catch(err => {
+          console.error('❌ File load failed:', err);
+          document.getElementById('output').textContent = 'File load failed.';
+        });
+    } else {
+      document.getElementById('output').textContent = 'No `load` parameter specified.';
+    }
+
+    // Utility: Convert ArrayBuffer or Uint8Array to Base64
+    function arrayBufferToBase64(buffer) {
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    }
+  </script>
+
+
+
+
 <script src="/pdf/pdf.js"></script>
 <script src="/pdf/viewer_external.js"></script>
 
