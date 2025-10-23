@@ -831,7 +831,7 @@ var PDFViewerApplication = {
   },
 
   get supportsPrinting() {
-    return PDFPrintServiceFactory.instance.supportsPrinting;
+    return false;
   },
 
   get supportsFullscreen() {
@@ -1423,9 +1423,7 @@ var PDFViewerApplication = {
           var js = javaScript[i];
 
           if (js && regex.test(js)) {
-            setTimeout(function () {
-              window.print();
-            });
+
             return;
           }
         }
@@ -1566,7 +1564,7 @@ var PDFViewerApplication = {
     }
   },
   forceRendering: function forceRendering() {
-    this.pdfRenderingQueue.printing = this.printing;
+    //this.pdfRenderingQueue.printing = this.printing;
     this.pdfRenderingQueue.isThumbnailViewEnabled = this.pdfSidebar.isThumbnailViewVisible;
     this.pdfRenderingQueue.renderHighestPriority();
   },
@@ -1578,9 +1576,6 @@ var PDFViewerApplication = {
     }
 
     if (!this.supportsPrinting) {
-      this.l10n.get('printing_not_supported', null, 'Warning: Printing is not fully supported by ' + 'this browser.').then(function (printMessage) {
-        _this7.error(printMessage);
-      });
       return;
     }
 
