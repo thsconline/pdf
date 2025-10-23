@@ -1551,26 +1551,12 @@ var PDFViewerApplication = {
       return;
     }
 
-    if (!this.supportsPrinting) {
+    
       this.l10n.get('printing_not_supported', null, 'Warning: Printing is not supported.').then(function (printMessage) {
         _this7.error(printMessage);
       });
       return;
-    }
-
-    if (!this.pdfViewer.pageViewsReady) {
-      this.l10n.get('printing_not_ready', null, 'Warning: The PDF is not fully loaded for printing.').then(function (notReadyMessage) {
-        window.alert(notReadyMessage);
-      });
-      return;
-    }
-
-    var pagesOverview = this.pdfViewer.getPagesOverview();
-    var printContainer = this.appConfig.printContainer;
-    var printService = PDFPrintServiceFactory.instance.createPrintService(this.pdfDocument, pagesOverview, printContainer, this.l10n);
-    this.printService = printService;
-    this.forceRendering();
-    printService.layout();
+    
   },
   afterPrint: function pdfViewSetupAfterPrint() {
     if (this.printService) {
@@ -1602,8 +1588,6 @@ var PDFViewerApplication = {
     _boundEvents.afterPrint = this.afterPrint.bind(this);
     eventBus.on('resize', webViewerResize);
     eventBus.on('hashchange', webViewerHashchange);
-    eventBus.on('beforeprint', _boundEvents.beforePrint);
-    eventBus.on('afterprint', _boundEvents.afterPrint);
     eventBus.on('pagerendered', webViewerPageRendered);
     eventBus.on('textlayerrendered', webViewerTextLayerRendered);
     eventBus.on('updateviewarea', webViewerUpdateViewarea);
@@ -1615,9 +1599,7 @@ var PDFViewerApplication = {
     eventBus.on('namedaction', webViewerNamedAction);
     eventBus.on('presentationmodechanged', webViewerPresentationModeChanged);
     eventBus.on('presentationmode', webViewerPresentationMode);
-    eventBus.on('openfile', webViewerOpenFile);
-    eventBus.on('print', webViewerPrint);
-    eventBus.on('download', webViewerDownload);
+    eventBus.on('openfile', webViewerOpenFile); 
     eventBus.on('firstpage', webViewerFirstPage);
     eventBus.on('lastpage', webViewerLastPage);
     eventBus.on('nextpage', webViewerNextPage);
@@ -1657,18 +1639,6 @@ var PDFViewerApplication = {
       });
     };
 
-    _boundEvents.windowBeforePrint = function () {
-      eventBus.dispatch('beforeprint', {
-        source: window
-      });
-    };
-
-    _boundEvents.windowAfterPrint = function () {
-      eventBus.dispatch('afterprint', {
-        source: window
-      });
-    };
-
     window.addEventListener('visibilitychange', webViewerVisibilityChange);
     window.addEventListener('wheel', webViewerWheel, {
       passive: false
@@ -1677,16 +1647,12 @@ var PDFViewerApplication = {
     window.addEventListener('keydown', webViewerKeyDown);
     window.addEventListener('resize', _boundEvents.windowResize);
     window.addEventListener('hashchange', _boundEvents.windowHashChange);
-    window.addEventListener('beforeprint', _boundEvents.windowBeforePrint);
-    window.addEventListener('afterprint', _boundEvents.windowAfterPrint);
   },
   unbindEvents: function unbindEvents() {
     var eventBus = this.eventBus,
         _boundEvents = this._boundEvents;
     eventBus.off('resize', webViewerResize);
     eventBus.off('hashchange', webViewerHashchange);
-    eventBus.off('beforeprint', _boundEvents.beforePrint);
-    eventBus.off('afterprint', _boundEvents.afterPrint);
     eventBus.off('pagerendered', webViewerPageRendered);
     eventBus.off('textlayerrendered', webViewerTextLayerRendered);
     eventBus.off('updateviewarea', webViewerUpdateViewarea);
@@ -1698,9 +1664,7 @@ var PDFViewerApplication = {
     eventBus.off('namedaction', webViewerNamedAction);
     eventBus.off('presentationmodechanged', webViewerPresentationModeChanged);
     eventBus.off('presentationmode', webViewerPresentationMode);
-    eventBus.off('openfile', webViewerOpenFile);
-    eventBus.off('print', webViewerPrint);
-    eventBus.off('download', webViewerDownload);
+    eventBus.off('openfile', webViewerOpenFile);    
     eventBus.off('firstpage', webViewerFirstPage);
     eventBus.off('lastpage', webViewerLastPage);
     eventBus.off('nextpage', webViewerNextPage);
@@ -1733,8 +1697,6 @@ var PDFViewerApplication = {
     window.removeEventListener('keydown', webViewerKeyDown);
     window.removeEventListener('resize', _boundEvents.windowResize);
     window.removeEventListener('hashchange', _boundEvents.windowHashChange);
-    window.removeEventListener('beforeprint', _boundEvents.windowBeforePrint);
-    window.removeEventListener('afterprint', _boundEvents.windowAfterPrint);
     _boundEvents.windowResize = null;
     _boundEvents.windowHashChange = null;
     _boundEvents.windowBeforePrint = null;
