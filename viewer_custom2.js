@@ -15198,6 +15198,7 @@ document.webL10n = function (window, document, undefined) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.PDFPrintService = PDFPrintService;
 
 var _ui_utils = __webpack_require__(5);
 
@@ -15247,6 +15248,18 @@ function dispatchEvent(eventType) {
   event.initCustomEvent(eventType, false, false, 'custom');
   window.dispatchEvent(event);
 }
+
+function PDFPrintService(pdfDocument, pagesOverview, printContainer, l10n) {
+  this.pdfDocument = pdfDocument;
+  this.pagesOverview = pagesOverview;
+  this.printContainer = printContainer;
+  this.l10n = l10n || _ui_utils.NullL10n;
+  this.disableCreateObjectURL = pdfDocument.loadingParams['disableCreateObjectURL'];
+  this.currentPage = -1;
+  this.scratchCanvas = document.createElement('canvas');
+}
+PDFPrintService.prototype = {
+};
 
 /***/ })
 /******/ ]);
