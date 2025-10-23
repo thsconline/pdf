@@ -15335,7 +15335,37 @@ function renderProgress(index, total, l10n) {
   });
 }
 
+
 var hasAttachEvent = !!document.attachEvent;
+window.addEventListener('keydown', function (event) {
+  if (event.keyCode === 80 && (event.ctrlKey || event.metaKey) && !event.altKey && (!event.shiftKey || window.chrome || window.opera)) {   
+
+    if (hasAttachEvent) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (event.stopImmediatePropagation) {
+      event.stopImmediatePropagation();
+    } else {
+      event.stopPropagation();
+    }
+
+    return;
+  }
+}, true);
+
+if (hasAttachEvent) {
+  document.attachEvent('onkeydown', function (event) {
+    event = event || window.event;
+
+    if (event.keyCode === 80 && event.ctrlKey) {
+      event.keyCode = 0;
+      return false;
+    }
+  });
+}
 
 if ('onbeforeprint' in window) {
   var stopPropagationIfNeeded = function stopPropagationIfNeeded(event) {
@@ -15344,8 +15374,6 @@ if ('onbeforeprint' in window) {
     }
   };
 
-  window.addEventListener('beforeprint', stopPropagationIfNeeded);
-  window.addEventListener('afterprint', stopPropagationIfNeeded);
 }
 
 var overlayPromise;
