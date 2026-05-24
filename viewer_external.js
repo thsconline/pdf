@@ -1913,12 +1913,26 @@ function webViewerInitialized() {
 var webViewerOpenFileViaURL;
 {
   webViewerOpenFileViaURL = function webViewerOpenFileViaURL(file) {
+
     if (file && file.lastIndexOf('file:', 0) === 0) {
       PDFViewerApplication.setTitleUsingUrl(file);
+
       var xhr = new XMLHttpRequest();
 
       xhr.onload = function () {
-        PDFViewerApplication.open(new Uint8Array(xhr.response));
+        try {
+          PDFViewerApplication.open(new Uint8Array(xhr.response))
+            .catch(function (err) {
+              console.error("PDF load failed (file:)", err);
+              PDFViewerApplication.open("/pdf/404_html.pdf");
+            });
+        } catch (e) {
+          PDFViewerApplication.open("/pdf/404_html.pdf");
+        }
+      };
+
+      xhr.onerror = function () {
+        PDFViewerApplication.open("/pdf/404_html.pdf");
       };
 
       xhr.open('GET', file);
@@ -1928,7 +1942,11 @@ var webViewerOpenFileViaURL;
     }
 
     if (file) {
-      PDFViewerApplication.open(file);
+      PDFViewerApplication.open(file)
+        .catch(function (err) {
+          console.error("PDF load failed:", err);
+          PDFViewerApplication.open("/pdf/404_html.pdf");
+        });
     }
   };
 }
