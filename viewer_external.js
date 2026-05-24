@@ -1914,40 +1914,73 @@ var webViewerOpenFileViaURL;
 {
   webViewerOpenFileViaURL = function webViewerOpenFileViaURL(file) {
 
-    if (file && file.lastIndexOf('file:', 0) === 0) {
+    var fallback = "/pdf/404_html.pdf";
+
+    function openFallback() {
+      try {
+        PDFViewerApplication.open(fallback);
+      } catch (e) {
+        console.error("Failed to open fallback PDF:", e);
+      }
+    }
+
+    function openWithCatch(src) {
+      try {
+        var p = PDFViewerApplication.open(src);
+        if (p && p.catch) {
+          p.catch(function (err) {
+            console.error("PDF load failed:", err);
+            openFallback();
+          });
+        }
+      } catch (e) {
+        console.error("PDF open exception:", e);
+        openFallback();
+      }
+    }
+
+    if (!file) {
+      openFallback();
+      return;
+    }
+
+    // file: protocol handling
+    if (file.lastIndexOf("file:", 0) === 0) {
+
       PDFViewerApplication.setTitleUsingUrl(file);
 
       var xhr = new XMLHttpRequest();
 
       xhr.onload = function () {
         try {
-          PDFViewerApplication.open(new Uint8Array(xhr.response))
-            .catch(function (err) {
-              console.error("PDF load failed (file:)", err);
-              PDFViewerApplication.open("/pdf/404_html.pdf");
-            });
+          openWithCatch(new Uint8Array(xhr.response));
         } catch (e) {
-          PDFViewerApplication.open("/pdf/404_html.pdf");
+          console.error("XHR PDF parse failed:", e);
+          openFallback();
         }
       };
 
       xhr.onerror = function () {
-        PDFViewerApplication.open("/pdf/404_html.pdf");
+        openFallback();
       };
 
-      xhr.open('GET', file);
-      xhr.responseType = 'arraybuffer';
+      xhr.open("GET", file);
+      xhr.responseType = "arraybuffer";
       xhr.send();
+
       return;
     }
 
-    if (file) {
-      PDFViewerApplication.open(file)
-        .catch(function (err) {
-          console.error("PDF load failed:", err);
-          PDFViewerApplication.open("/pdf/404_html.pdf");
-        });
-    }
+    // optional pre-check BEFORE handing to PDF.js
+    fetch(file, { method: "HEAD" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("Missing PDF file");
+        openWithCatch(file);
+      })
+      .catch(function (err) {
+        console.error("Precheck failed:", err);
+        openFallback();
+      });
   };
 }
 
