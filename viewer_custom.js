@@ -872,9 +872,10 @@ var PDFViewerApplication = {
   },
   setTitleUsingUrl: function setTitleUsingUrl() {
 	  /* removed function */
-	return;
+	this.setTitle(title);
   },
   setTitle: function setTitle(title) {
+	 
     return;
   },
   close: function () {
@@ -972,14 +973,14 @@ open: function () {
             var parameters = Object.create(null);
 
             if (typeof file === 'string') {
-              this.setTitleUsingUrl(file);
+              //this.setTitleUsingUrl(file);
               parameters.url = file;
             } 
             else if (file && 'byteLength' in file) {
               parameters.data = file;
             } 
             else if (file.url && file.originalUrl) {
-              this.setTitleUsingUrl(file.originalUrl);
+              //this.setTitleUsingUrl(file.originalUrl);
               parameters.url = file.url;
             }
 
@@ -2001,7 +2002,7 @@ var webViewerOpenFileViaURL;
 {
   webViewerOpenFileViaURL = function webViewerOpenFileViaURL(file) {
     if (file && file.lastIndexOf('file:', 0) === 0) {
-      PDFViewerApplication.setTitleUsingUrl(file);
+      //PDFViewerApplication.setTitleUsingUrl(file);
       var xhr = new XMLHttpRequest();
 
       xhr.onload = function () {
@@ -2203,7 +2204,7 @@ var webViewerFileInputChange;
 
       PDFViewerApplication.open(url);
     } else {
-      PDFViewerApplication.setTitleUsingUrl(file.name);
+      //PDFViewerApplication.setTitleUsingUrl(file.name);
       var fileReader = new FileReader();
 
       fileReader.onload = function webViewerChangeFileReaderOnload(evt) {
