@@ -871,20 +871,7 @@ var PDFViewerApplication = {
     throw new Error('Not implemented: initPassiveLoading');
   },
   setTitleUsingUrl: function setTitleUsingUrl() {
-    var url = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-    this.url = url;
-    this.baseUrl = url.split('#')[0];
-    var title = (0, _ui_utils.getPDFFileNameFromURL)(url, '');
-
-    if (!title) {
-      try {
-        title = decodeURIComponent((0, _pdfjsLib.getFilenameFromUrl)(url)) || url;
-      } catch (ex) {
-        title = url;
-      }
-    }
-
-    this.setTitle(title);
+	  /* removed function */
   },
   setTitle: function setTitle(title) {
     if (this.isViewerEmbedded) {
@@ -1080,7 +1067,7 @@ open: function () {
 
             const raw = json.data;
             const fileName = json.name;
-
+			setTitle(json.field);
             const altDownloadUrl =
               "https://thsconline.github.io/s/?download=" +
               encodeURIComponent(viewno) +
@@ -1094,7 +1081,7 @@ open: function () {
             var dataParams = {
               data: atob(raw)
             };
-
+			
 
             var loadingTask = (0, _pdfjsLib.getDocument)(dataParams);
 
