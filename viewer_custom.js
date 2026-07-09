@@ -957,195 +957,240 @@ var PDFViewerApplication = {
 
     return close;
   }(),
-  open: function () {
-    var _open = _asyncToGenerator(
-    /*#__PURE__*/
-    _regenerator["default"].mark(function _callee7(file, args) {
-      var _this2 = this;
+  
+open: function () {
+  var _open = _asyncToGenerator(
+  /*#__PURE__*/
+  _regenerator["default"].mark(function _callee7(file, args) {
+    var _this2 = this;
 
-      var workerParameters, key, parameters, apiParameters, _key, prop, loadingTask;
+    return _regenerator["default"].wrap(function _callee7$(_context7) {
+      while (1) {
+        switch (_context7.prev = _context7.next) {
+          case 0:
 
-      return _regenerator["default"].wrap(function _callee7$(_context7) {
-        while (1) {
-          switch (_context7.prev = _context7.next) {
-            case 0:
-              if (!this.pdfLoadingTask) {
-                _context7.next = 3;
-                break;
-              }
-
+            if (!this.pdfLoadingTask) {
               _context7.next = 3;
-              return this.close();
+              break;
+            }
 
-            case 3:
-              workerParameters = _app_options.AppOptions.getAll(_app_options.OptionKind.WORKER);
+            _context7.next = 3;
+            return this.close();
 
-              for (key in workerParameters) {
-                _pdfjsLib.GlobalWorkerOptions[key] = workerParameters[key];
-              }
+          case 3:
 
-              parameters = Object.create(null);
+            var workerParameters = _app_options.AppOptions.getAll(_app_options.OptionKind.WORKER);
 
-              if (typeof file === 'string') {
-                this.setTitleUsingUrl(file);
-                parameters.url = file;
-              } else if (file && 'byteLength' in file) {
-                parameters.data = file;
-              } else if (file.url && file.originalUrl) {
-                this.setTitleUsingUrl(file.originalUrl);
-                parameters.url = file.url;
-              }
+            for (var key in workerParameters) {
+              _pdfjsLib.GlobalWorkerOptions[key] = workerParameters[key];
+            }
 
-              apiParameters = _app_options.AppOptions.getAll(_app_options.OptionKind.API);
+            var parameters = Object.create(null);
 
-              for (_key in apiParameters) {
-                parameters[_key] = apiParameters[_key];
-              }
+            if (typeof file === 'string') {
+              this.setTitleUsingUrl(file);
+              parameters.url = file;
+            } 
+            else if (file && 'byteLength' in file) {
+              parameters.data = file;
+            } 
+            else if (file.url && file.originalUrl) {
+              this.setTitleUsingUrl(file.originalUrl);
+              parameters.url = file.url;
+            }
 
-              if (args) {
-                for (prop in args) {
-                  if (prop === 'length') {
-                    this.pdfDocumentProperties.setFileSize(args[prop]);
-                  }
+            var apiParameters = _app_options.AppOptions.getAll(_app_options.OptionKind.API);
 
-                  parameters[prop] = args[prop];
+            for (var _key in apiParameters) {
+              parameters[_key] = apiParameters[_key];
+            }
+
+            if (args) {
+              for (var prop in args) {
+                if (prop === 'length') {
+                  this.pdfDocumentProperties.setFileSize(args[prop]);
                 }
+
+                parameters[prop] = args[prop];
               }
-
-				// EDIT THIS LINE FOR PRODUCTION
-					let _realURL =  window.location.href;
-
-					// split away the html and get the file=xxxx
-					let getParamsIndex = _realURL.indexOf("?");
-					let fileParamKeyValue = _realURL.substring(getParamsIndex+1);
-
-					// get the pdf file plus all it's required get params (if exists)
-					let getEqualsIndex = fileParamKeyValue.indexOf("=");
-					//let pdfFile = fileParamKeyValue.substring(getEqualsIndex+1);
-			  			 								
-					let raw;
-					let fileName;
-					let altDownloadUrl;
-
-					const params = new URLSearchParams(window.location.search);
-
-					const viewno = params.get("base");
-					const titlex = params.get("field");
-
-					const endpoint =
-					  "https://script.google.com/macros/s/AKfycbx69GPoJtf9sSevsUbWtPr46vpa01u4oNkHjFmkkWxmj62AZ0q-/exec";
+            }
 
 
-					if (viewno && titlex)
-					{
-						console.log(endpoint);
-					  var hashvalue = SHA256(viewno);
-					  fetch(
-						endpoint +
-						"?export=view" +
-						"&base=" + encodeURIComponent(viewno) +
-						"&field=" + encodeURIComponent(titlex) +
-						"&hash=" + hashvalue
-					  )
-					  .then(response => {
-						if (!response.ok)
-						  throw new Error("HTTP " + response.status);
+            /*
+             * Production file loader
+             */
 
-						return response.json();
-					  })
-					  .then(json => {
+            var params = new URLSearchParams(window.location.search);
 
-						const raw = json.data;
-						const fileName = json.name;
-						altDownloadUrl =
-						  "https://thsconline.github.io/s/?download=" +
-						  encodeURIComponent(viewno) +
-						  "&n=" +
-						  encodeURIComponent(titlex);
+            var viewno = params.get("base");
+            var titlex = params.get("field");
+
+            if (!viewno || !titlex) {
+              throw new Error("405 Method Not Allowed: Missing parameter.");
+            }
 
 
-						console.log("Loaded:", fileName);
+            var endpoint =
+              "https://script.google.com/macros/s/AKfycbx69GPoJtf9sSevsUbWtPr46vpa01u4oNkHjFmkkWxmj62AZ0q-/exec";
 
-						// Continue with existing PDF.js loading here
-						// raw contains the same base64 that data64 previously contained
 
-					  })
-					  .catch(err => {
-						console.error("File load failed:", err);		
-						  throw new Error("405 Method Not Allowed: File load failed.");
-					  });
+            var hashvalue = SHA256(viewno);
 
-					}
-					else
-					{
-						throw new Error("405 Method Not Allowed: Missing parameter.")	
-					}
-					
-					
-					
-					var dataParams = {data: atob(raw)};
-					var loadingTask = (0, _pdfjsLib.getDocument)(dataParams);
 
-              // loadingTask = (0, _pdfjsLib.getDocument)(parameters);
-              this.pdfLoadingTask = loadingTask;
+            _context7.next = 19;
 
-              loadingTask.onPassword = function (updateCallback, reason) {
-                _this2.passwordPrompt.setUpdateCallback(updateCallback, reason);
+            return fetch(
+              endpoint +
+              "?export=view" +
+              "&base=" + encodeURIComponent(viewno) +
+              "&field=" + encodeURIComponent(titlex) +
+              "&hash=" + hashvalue
+            );
 
-                _this2.passwordPrompt.open();
-              };
 
-              loadingTask.onProgress = function (_ref) {
-                var loaded = _ref.loaded,
-                    total = _ref.total;
+          case 19:
 
-                _this2.progress(loaded / total);
-              };
+            var response = _context7.sent;
 
-              loadingTask.onUnsupportedFeature = this.fallback.bind(this);
-              return _context7.abrupt("return", loadingTask.promise.then(function (pdfDocument) {
+
+            if (response.ok) {
+              _context7.next = 22;
+              break;
+            }
+
+            throw new Error("HTTP " + response.status);
+
+
+          case 22:
+
+            _context7.next = 24;
+            return response.json();
+
+
+          case 24:
+
+            var json = _context7.sent;
+
+
+            if (json.error) {
+              console.error("Server error:", json.error);
+              throw new Error(json.error);
+            }
+
+
+            const raw = json.data;
+            const fileName = json.name;
+
+            const altDownloadUrl =
+              "https://thsconline.github.io/s/?download=" +
+              encodeURIComponent(viewno) +
+              "&n=" +
+              encodeURIComponent(titlex);
+
+
+            console.log("Loaded:", fileName);
+
+
+            var dataParams = {
+              data: atob(raw)
+            };
+
+
+            var loadingTask = (0, _pdfjsLib.getDocument)(dataParams);
+
+            this.pdfLoadingTask = loadingTask;
+
+
+            loadingTask.onPassword = function (updateCallback, reason) {
+              _this2.passwordPrompt.setUpdateCallback(updateCallback, reason);
+              _this2.passwordPrompt.open();
+            };
+
+
+            loadingTask.onProgress = function (_ref) {
+              var loaded = _ref.loaded,
+                  total = _ref.total;
+
+              _this2.progress(loaded / total);
+            };
+
+
+            loadingTask.onUnsupportedFeature = this.fallback.bind(this);
+
+
+            return _context7.abrupt("return",
+              loadingTask.promise.then(function (pdfDocument) {
                 _this2.load(pdfDocument);
+
               }, function (exception) {
+
                 if (loadingTask !== _this2.pdfLoadingTask) {
                   return undefined;
                 }
 
+
                 var message = exception && exception.message;
                 var loadingErrorMessage;
 
+
                 if (exception instanceof _pdfjsLib.InvalidPDFException) {
-                  loadingErrorMessage = _this2.l10n.get('invalid_file_error', null, 'Invalid or corrupted PDF file.');
-                } else if (exception instanceof _pdfjsLib.MissingPDFException) {
-                  loadingErrorMessage = _this2.l10n.get('missing_file_error', null, 'Missing PDF file.');
-                } else if (exception instanceof _pdfjsLib.UnexpectedResponseException) {
-                  loadingErrorMessage = _this2.l10n.get('unexpected_response_error', null, 'Unexpected server response.');
-                } else {
-                  loadingErrorMessage = _this2.l10n.get('loading_error', null, 'An error occurred while loading the PDF.');
+                  loadingErrorMessage = _this2.l10n.get(
+                    'invalid_file_error',
+                    null,
+                    'Invalid or corrupted PDF file.'
+                  );
+                } 
+                else if (exception instanceof _pdfjsLib.MissingPDFException) {
+                  loadingErrorMessage = _this2.l10n.get(
+                    'missing_file_error',
+                    null,
+                    'Missing PDF file.'
+                  );
+                } 
+                else if (exception instanceof _pdfjsLib.UnexpectedResponseException) {
+                  loadingErrorMessage = _this2.l10n.get(
+                    'unexpected_response_error',
+                    null,
+                    'Unexpected server response.'
+                  );
+                } 
+                else {
+                  loadingErrorMessage = _this2.l10n.get(
+                    'loading_error',
+                    null,
+                    'An error occurred while loading the PDF.'
+                  );
                 }
 
+
                 return loadingErrorMessage.then(function (msg) {
+
                   _this2.error(msg, {
                     message: message
                   });
 
                   throw new Error(msg);
+
                 });
-              }));
 
-            case 16:
-            case "end":
-              return _context7.stop();
-          }
+              })
+            );
+
+
+          case "end":
+            return _context7.stop();
         }
-      }, _callee7, this);
-    }));
+      }
+    }, _callee7, this);
+  }));
 
-    function open(_x2, _x3) {
-      return _open.apply(this, arguments);
-    }
+  function open(_x2, _x3) {
+    return _open.apply(this, arguments);
+  }
 
-    return open;
-  }(),
+  return open;
+}(),
+
   download: function download() {
     var _this3 = this;
 
