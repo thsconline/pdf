@@ -1555,13 +1555,13 @@ open: function () {
       if (!pdfTitle && info && info['Title']) {
         pdfTitle = info['Title'];
       }
-
+/*
       if (pdfTitle) {
         _this5.setTitle("".concat(pdfTitle, " - ").concat(contentDispositionFilename || document.title));
       } else if (contentDispositionFilename) {
         _this5.setTitle(contentDispositionFilename);
       }
-
+*/
       if (info.IsAcroFormPresent) {
         console.warn('Warning: AcroForm/XFA is not supported');
 
