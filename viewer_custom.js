@@ -872,13 +872,10 @@ var PDFViewerApplication = {
   },
   setTitleUsingUrl: function setTitleUsingUrl() {
 	  /* removed function */
+	return;
   },
   setTitle: function setTitle(title) {
-    if (this.isViewerEmbedded) {
-      return;
-    }
-
-    document.title = title;
+    return;
   },
   close: function () {
     var _close = _asyncToGenerator(
@@ -1067,7 +1064,7 @@ open: function () {
 
             const raw = json.data;
             const fileName = json.name;
-			setTitle(json.field);
+			document.title = json.field;
             const altDownloadUrl =
               "https://thsconline.github.io/s/?download=" +
               encodeURIComponent(viewno) +
