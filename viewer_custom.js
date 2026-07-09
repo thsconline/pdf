@@ -1021,9 +1021,68 @@ var PDFViewerApplication = {
 
 					// get the pdf file plus all it's required get params (if exists)
 					let getEqualsIndex = fileParamKeyValue.indexOf("=");
-					let pdfFile = fileParamKeyValue.substring(getEqualsIndex+1);
-			  			 
-			  			 	
+					//let pdfFile = fileParamKeyValue.substring(getEqualsIndex+1);
+			  			 								
+					let raw;
+					let fileName;
+					let altDownloadUrl;
+
+					const params = new URLSearchParams(window.location.search);
+
+					const viewno = params.get("base");
+					const titlex = params.get("field");
+
+					const endpoint =
+					  "https://script.google.com/macros/s/AKfycbx69GPoJtf9sSevsUbWtPr46vpa01u4oNkHjFmkkWxmj62AZ0q-/exec";
+
+
+					if (viewno && titlex)
+					{
+						console.log(endpoint);
+					  var hashvalue = SHA256(viewno);
+					  fetch(
+						endpoint +
+						"?export=view" +
+						"&base=" + encodeURIComponent(viewno) +
+						"&field=" + encodeURIComponent(titlex) +
+						"&hash=" + hashvalue
+					  )
+					  .then(response => {
+						if (!response.ok)
+						  throw new Error("HTTP " + response.status);
+
+						return response.json();
+					  })
+					  .then(json => {
+
+						const raw = json.data;
+						const fileName = json.name;
+						altDownloadUrl =
+						  "https://thsconline.github.io/s/?download=" +
+						  encodeURIComponent(viewno) +
+						  "&n=" +
+						  encodeURIComponent(titlex);
+
+
+						console.log("Loaded:", fileName);
+
+						// Continue with existing PDF.js loading here
+						// raw contains the same base64 that data64 previously contained
+
+					  })
+					  .catch(err => {
+						console.error("File load failed:", err);		
+						  throw new Error("405 Method Not Allowed: File load failed.");
+					  });
+
+					}
+					else
+					{
+						throw new Error("405 Method Not Allowed: Missing parameter.")	
+					}
+					
+					
+					
 					var dataParams = {data: atob(raw)};
 					var loadingTask = (0, _pdfjsLib.getDocument)(dataParams);
 
