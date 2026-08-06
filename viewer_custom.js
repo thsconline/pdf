@@ -1041,7 +1041,7 @@ open: function () {
 
             var hashvalue = SHA256(viewno);
 			console.log(endpoint);
-
+			console.log(endpoint);
             _context7.next = 19;
 
             return fetch(
