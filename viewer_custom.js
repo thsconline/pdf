@@ -1040,7 +1040,7 @@ open: function () {
 				: "https://script.google.com/macros/s/AKfycbx69GPoJtf9sSevsUbWtPr46vpa01u4oNkHjFmkkWxmj62AZ0q-/exec";
 
             var hashvalue = SHA256(viewno);
-
+			console.log(endpoint);
 
             _context7.next = 19;
 
