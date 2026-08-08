@@ -1068,9 +1068,7 @@ open: function () {
               "&n=" +
               encodeURIComponent(titlex);
 
-
             console.log("Loaded:", fileName);
-
 
             var dataParams = {
               data: atob(raw)
