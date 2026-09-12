@@ -1120,9 +1120,10 @@ case 24:
    * ----------------------------------------------------------
    */
 
-  _context7.next = 28;
+	_context7.next = 28;
 
-  return fetch(encryptedFile);
+	return fetch("/pdf/document.pdf.enc");
+
 
 
 case 28:
