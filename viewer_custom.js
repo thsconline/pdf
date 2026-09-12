@@ -1232,29 +1232,59 @@ case 33:
     "bytes"
   );
 
+/*
+ * Base64 -> Uint8Array
+ */
 
-  /*
-   * ----------------------------------------------------------
-   * Import AES key
-   * ----------------------------------------------------------
-   */
+var keyBinary = atob(keyBase64);
 
-  _context7.next = 36;
+var keyBytes = new Uint8Array(
+    keyBinary.length
+);
 
-  return crypto.subtle.importKey(
+for (var i = 0; i < keyBinary.length; i++) {
+    keyBytes[i] = keyBinary.charCodeAt(i);
+}
+
+if (keyBytes.length !== 32) {
+    throw new Error(
+        "Invalid AES key. Expected 32 bytes, got " +
+        keyBytes.length
+    );
+}
+
+console.log(
+    "AES key:",
+    keyBytes.length,
+    "bytes"
+);
+
+
+/*
+ * Import AES-256 key
+ *
+ * Pass the actual ArrayBuffer rather than
+ * relying on Uint8Array being accepted by
+ * this particular environment.
+ */
+
+_context7.next = 36;
+
+return crypto.subtle.importKey(
     "raw",
-    keyBytes,
+    keyBytes.buffer,
     {
-      name: "AES-CBC"
+        name: "AES-CBC"
     },
     false,
     ["decrypt"]
-  );
+);
 
 
 case 36:
 
-  var cryptoKey = _context7.sent;
+var cryptoKey = _context7.sent;
+
 
 
   /*
