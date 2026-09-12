@@ -1037,7 +1037,7 @@ const keyFile = "/pdf/document.pdf.key";
  * ------------------------------------------------------------
  */
 
-const keyResponse = await fetch(keyFile);
+const keyResponse = fetch(keyFile);
 
 if (!keyResponse.ok) {
   throw new Error(
@@ -1047,7 +1047,7 @@ if (!keyResponse.ok) {
 }
 
 const keyBase64 = (
-  await keyResponse.text()
+  keyResponse.text()
 ).trim();
 
 
@@ -1087,7 +1087,7 @@ console.log(
  * ------------------------------------------------------------
  */
 
-const encryptedResponse = await fetch(
+const encryptedResponse = fetch(
   encryptedFile
 );
 
@@ -1099,7 +1099,7 @@ if (!encryptedResponse.ok) {
 }
 
 const encrypted = new Uint8Array(
-  await encryptedResponse.arrayBuffer()
+  encryptedResponse.arrayBuffer()
 );
 
 
@@ -1189,7 +1189,7 @@ console.log(
  */
 
 const cryptoKey =
-  await crypto.subtle.importKey(
+  crypto.subtle.importKey(
     "raw",
     keyBytes,
     {
@@ -1214,7 +1214,7 @@ try {
 
   gzipBytes =
     new Uint8Array(
-      await crypto.subtle.decrypt(
+      crypto.subtle.decrypt(
         {
           name: "AES-CBC",
           iv: iv
@@ -1262,7 +1262,7 @@ try {
       );
 
   pdfBytes =
-    await new Response(
+    new Response(
       gzipStream
     ).arrayBuffer();
 
