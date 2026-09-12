@@ -885,6 +885,19 @@ var PDFViewerApplication = {
       var errorWrapper, promise;
       return _regenerator["default"].wrap(function _callee6$(_context6) {
         while (1) {
+			
+			
+		var encryptedFile;
+		var keyFile;
+		var keyBytes;
+		var encrypted;
+		var iv;
+		var ciphertext;
+		var hmac;
+		var cryptoKey;
+		var gzipBytes;
+		var pdfBytes;	
+		
           switch (_context6.prev = _context6.next) {
             case 0:
               errorWrapper = this.appConfig.errorWrapper.container;
