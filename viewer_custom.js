@@ -1002,77 +1002,302 @@ open: function () {
 
 
             /*
-             * Production file loader
-             */
-
-            var params = new URLSearchParams(window.location.search);
-
-            var viewno = params.get("base");
-            var titlex = params.get("field");
-			var endpoint = params.get("w");
-				
-
-            if (!viewno || !titlex || !endpoint) {
-              throw new Error("405 Method Not Allowed: Missing parameter.");
-            }
-
-            var hashvalue = SHA256(viewno);
-			
-            _context7.next = 19;
-
-            return fetch(
-              "https://script.google.com/macros/s/" + endpoint + 
-              "/exec?export=view" +
-              "&base=" + encodeURIComponent(viewno) +
-              "&field=" + encodeURIComponent(titlex) +
-              "&hash=" + hashvalue
-            );
+ * Test encrypted file loader
+ *
+ * Files:
+ *
+ *   document.pdf.enc
+ *   document.pdf.key
+ *
+ * .enc format:
+ *
+ *   [16-byte IV]
+ *   [AES-CBC ciphertext]
+ *   [32-byte HMAC]
+ *
+ * .key:
+ *
+ *   Base64 encoded 32-byte AES-256 key
+ */
 
 
-          case 19:
+/*
+ * ------------------------------------------------------------
+ * Hardcoded test filenames
+ * ------------------------------------------------------------
+ */
 
-            var response = _context7.sent;
-
-
-            if (response.ok) {
-              _context7.next = 22;
-              break;
-            }
-
-            throw new Error("HTTP " + response.status);
+const encryptedFile = "/pdf/document.pdf.enc";
+const keyFile = "/pdf/document.pdf.key";
 
 
-          case 22:
+/*
+ * ------------------------------------------------------------
+ * Load AES key
+ * ------------------------------------------------------------
+ */
 
-            _context7.next = 24;
-            return response.json();
+const keyResponse = await fetch(keyFile);
+
+if (!keyResponse.ok) {
+  throw new Error(
+    "Failed to load key: HTTP " +
+    keyResponse.status
+  );
+}
+
+const keyBase64 = (
+  await keyResponse.text()
+).trim();
 
 
-          case 24:
+/*
+ * Base64 -> bytes
+ */
 
-            var json = _context7.sent;
+const keyBinary = atob(keyBase64);
+
+const keyBytes = new Uint8Array(
+  keyBinary.length
+);
+
+for (let i = 0; i < keyBinary.length; i++) {
+  keyBytes[i] = keyBinary.charCodeAt(i);
+}
 
 
-            if (json.error) {
-              console.error("Server error:", json.error);
-              throw new Error(json.error);
-            }
+if (keyBytes.length !== 32) {
+  throw new Error(
+    "Invalid AES key. Expected 32 bytes, got " +
+    keyBytes.length
+  );
+}
 
 
-            const raw = json.data;
-            const fileName = json.name;
-			document.title = json.field;
-            const altDownloadUrl =
-              "https://thsconline.github.io/s/?download=" +
-              encodeURIComponent(viewno) +
-              "&n=" +
-              encodeURIComponent(titlex);
+console.log(
+  "AES-256 key loaded:",
+  keyBytes.length,
+  "bytes"
+);
 
-            console.log("Loaded:", fileName);
 
-            var dataParams = {
-              data: atob(raw)
-            };
+/*
+ * ------------------------------------------------------------
+ * Load encrypted file
+ * ------------------------------------------------------------
+ */
+
+const encryptedResponse = await fetch(
+  encryptedFile
+);
+
+if (!encryptedResponse.ok) {
+  throw new Error(
+    "Failed to load encrypted file: HTTP " +
+    encryptedResponse.status
+  );
+}
+
+const encrypted = new Uint8Array(
+  await encryptedResponse.arrayBuffer()
+);
+
+
+console.log(
+  "Encrypted file:",
+  encrypted.length,
+  "bytes"
+);
+
+
+/*
+ * ------------------------------------------------------------
+ * Validate encrypted file
+ *
+ * 16-byte IV
+ * 32-byte HMAC
+ * ------------------------------------------------------------
+ */
+
+if (encrypted.length < 48) {
+  throw new Error(
+    "Encrypted file is too small."
+  );
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * Extract IV
+ * ------------------------------------------------------------
+ */
+
+const iv = encrypted.slice(
+  0,
+  16
+);
+
+
+/*
+ * ------------------------------------------------------------
+ * Extract HMAC
+ *
+ * Not being verified yet.
+ * ------------------------------------------------------------
+ */
+
+const hmac = encrypted.slice(
+  encrypted.length - 32
+);
+
+
+/*
+ * ------------------------------------------------------------
+ * Extract ciphertext
+ * ------------------------------------------------------------
+ */
+
+const ciphertext = encrypted.slice(
+  16,
+  encrypted.length - 32
+);
+
+
+console.log(
+  "IV:",
+  iv.length,
+  "bytes"
+);
+
+console.log(
+  "Ciphertext:",
+  ciphertext.length,
+  "bytes"
+);
+
+console.log(
+  "HMAC:",
+  hmac.length,
+  "bytes"
+);
+
+
+/*
+ * ------------------------------------------------------------
+ * Import AES-256 key
+ * ------------------------------------------------------------
+ */
+
+const cryptoKey =
+  await crypto.subtle.importKey(
+    "raw",
+    keyBytes,
+    {
+      name: "AES-CBC"
+    },
+    false,
+    ["decrypt"]
+  );
+
+
+/*
+ * ------------------------------------------------------------
+ * AES-CBC decrypt
+ *
+ * Result = GZip data
+ * ------------------------------------------------------------
+ */
+
+let gzipBytes;
+
+try {
+
+  gzipBytes =
+    new Uint8Array(
+      await crypto.subtle.decrypt(
+        {
+          name: "AES-CBC",
+          iv: iv
+        },
+        cryptoKey,
+        ciphertext
+      )
+    );
+
+} catch (error) {
+
+  console.error(
+    "AES decryption failed:",
+    error
+  );
+
+  throw new Error(
+    "Unable to decrypt encrypted PDF."
+  );
+}
+
+
+console.log(
+  "Decrypted GZip:",
+  gzipBytes.length,
+  "bytes"
+);
+
+
+/*
+ * ------------------------------------------------------------
+ * GZip decompress
+ * ------------------------------------------------------------
+ */
+
+let pdfBytes;
+
+try {
+
+  const gzipStream =
+    new Blob([gzipBytes])
+      .stream()
+      .pipeThrough(
+        new DecompressionStream("gzip")
+      );
+
+  pdfBytes =
+    await new Response(
+      gzipStream
+    ).arrayBuffer();
+
+} catch (error) {
+
+  console.error(
+    "GZip decompression failed:",
+    error
+  );
+
+  throw new Error(
+    "Decrypted data is not a valid GZip stream."
+  );
+}
+
+
+console.log(
+  "Decompressed PDF:",
+  pdfBytes.byteLength,
+  "bytes"
+);
+
+
+/*
+ * ------------------------------------------------------------
+ * PDF.js parameters
+ *
+ * This is exactly what the existing
+ * getDocument() call expects.
+ * ------------------------------------------------------------
+ */
+
+var dataParams = {
+  data: new Uint8Array(pdfBytes)
+};
 			
 
             var loadingTask = (0, _pdfjsLib.getDocument)(dataParams);
