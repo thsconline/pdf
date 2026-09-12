@@ -1023,8 +1023,8 @@ open: function () {
  * ------------------------------------------------------------
  */
 
-var encryptedFile = "document.pdf.enc";
-var keyFile = "document.pdf.key";
+var encryptedFile = "/pdf/document.pdf.enc";
+var keyFile = "/pdf/document.pdf.key";
 
 
 /*
