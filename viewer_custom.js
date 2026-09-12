@@ -1236,30 +1236,6 @@ case 33:
  * Base64 -> Uint8Array
  */
 
-var keyBinary = atob(keyBase64);
-
-var keyBytes = new Uint8Array(
-    keyBinary.length
-);
-
-for (var i = 0; i < keyBinary.length; i++) {
-    keyBytes[i] = keyBinary.charCodeAt(i);
-}
-
-if (keyBytes.length !== 32) {
-    throw new Error(
-        "Invalid AES key. Expected 32 bytes, got " +
-        keyBytes.length
-    );
-}
-
-console.log(
-    "AES key:",
-    keyBytes.length,
-    "bytes"
-);
-
-
 /*
  * Import AES-256 key
  *
