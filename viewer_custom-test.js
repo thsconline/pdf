@@ -885,6 +885,19 @@ var PDFViewerApplication = {
       var errorWrapper, promise;
       return _regenerator["default"].wrap(function _callee6$(_context6) {
         while (1) {
+			
+			
+		var encryptedFile;
+		var keyFile;
+		var keyBytes;
+		var encrypted;
+		var iv;
+		var ciphertext;
+		var hmac;
+		var cryptoKey;
+		var gzipBytes;
+		var pdfBytes;	
+		
           switch (_context6.prev = _context6.next) {
             case 0:
               errorWrapper = this.appConfig.errorWrapper.container;
@@ -1001,78 +1014,330 @@ open: function () {
             }
 
 
-            /*
-             * Production file loader
-             */
-
-            var params = new URLSearchParams(window.location.search);
-
-            var viewno = params.get("base");
-            var titlex = params.get("field");
-			var endpoint = params.get("w");
-				
-
-            if (!viewno || !titlex || !endpoint) {
-              throw new Error("405 Method Not Allowed: Missing parameter.");
-            }
-
-            var hashvalue = SHA256(viewno);
-			
-            _context7.next = 19;
-
-            return fetch(
-              "https://script.google.com/macros/s/" + endpoint + 
-              "/exec?export=view" +
-              "&base=" + encodeURIComponent(viewno) +
-              "&field=" + encodeURIComponent(titlex) +
-              "&hash=" + hashvalue
-            );
+/*
+ * Test encrypted file loader
+ *
+ * Files:
+ *
+ *   document.pdf.enc
+ *   document.pdf.key
+ *
+ * .enc format:
+ *
+ *   [16-byte IV]
+ *   [AES-CBC ciphertext]
+ *   [32-byte HMAC]
+ */
 
 
-          case 19:
+/*
+ * ------------------------------------------------------------
+ * Hardcoded test filenames
+ * ------------------------------------------------------------
+ */
 
-            var response = _context7.sent;
-
-
-            if (response.ok) {
-              _context7.next = 22;
-              break;
-            }
-
-            throw new Error("HTTP " + response.status);
+var encryptedFile = "/pdf/document.pdf.enc";
+var keyFile = "/pdf/document.pdf.key";
 
 
-          case 22:
+/*
+ * ------------------------------------------------------------
+ * Helper: Base64 -> Uint8Array
+ * ------------------------------------------------------------
+ */
 
-            _context7.next = 24;
-            return response.json();
+function base64ToBytes(base64) {
+
+  var binary = atob(base64);
+
+  var bytes = new Uint8Array(
+    binary.length
+  );
+
+  for (var i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return bytes;
+}
 
 
-          case 24:
+/*
+ * ------------------------------------------------------------
+ * Load key
+ * ------------------------------------------------------------
+ */
 
-            var json = _context7.sent;
+_context7.next = 19;
+
+return fetch(keyFile);
 
 
-            if (json.error) {
-              console.error("Server error:", json.error);
-              throw new Error(json.error);
-            }
+case 19:
+
+  var keyResponse = _context7.sent;
 
 
-            const raw = json.data;
-            const fileName = json.name;
-			document.title = json.field;
-            const altDownloadUrl =
-              "https://thsconline.github.io/s/?download=" +
-              encodeURIComponent(viewno) +
-              "&n=" +
-              encodeURIComponent(titlex);
+  if (keyResponse.ok) {
+    _context7.next = 22;
+    break;
+  }
 
-            console.log("Loaded:", fileName);
+  throw new Error(
+    "Failed to load key: HTTP " +
+    keyResponse.status
+  );
 
-            var dataParams = {
-              data: atob(raw)
-            };
+
+case 22:
+
+  _context7.next = 24;
+
+  return keyResponse.text();
+
+
+case 24:
+
+  var keyBase64 = _context7.sent;
+
+  keyBase64 = keyBase64.trim();
+
+
+  /*
+   * Base64 -> AES key
+   */
+
+  var keyBytes = base64ToBytes(
+    keyBase64
+  );
+
+
+  if (keyBytes.length !== 32) {
+    throw new Error(
+      "Invalid AES key. Expected 32 bytes, got " +
+      keyBytes.length
+    );
+  }
+
+
+  console.log(
+    "AES-256 key loaded:",
+    keyBytes.length,
+    "bytes"
+  );
+
+
+  /*
+   * ----------------------------------------------------------
+   * Load encrypted file
+   * ----------------------------------------------------------
+   */
+
+	_context7.next = 28;
+
+	return fetch("/pdf/document.pdf.enc");
+
+
+
+case 28:
+
+  var encryptedResponse = _context7.sent;
+
+
+  if (encryptedResponse.ok) {
+    _context7.next = 31;
+    break;
+  }
+
+  throw new Error(
+    "Failed to load encrypted file: HTTP " +
+    encryptedResponse.status
+  );
+
+
+case 31:
+
+  _context7.next = 33;
+
+  return encryptedResponse.arrayBuffer();
+
+
+case 33:
+
+  var encrypted = new Uint8Array(
+    _context7.sent
+  );
+
+
+  console.log(
+    "Encrypted file:",
+    encrypted.length,
+    "bytes"
+  );
+
+
+  /*
+   * ----------------------------------------------------------
+   * Validate encrypted file
+   * ----------------------------------------------------------
+   */
+
+  if (encrypted.length < 48) {
+    throw new Error(
+      "Encrypted file is too small."
+    );
+  }
+
+
+  /*
+   * ----------------------------------------------------------
+   * Extract:
+   *
+   * [16-byte IV]
+   * [ciphertext]
+   * [32-byte HMAC]
+   * ----------------------------------------------------------
+   */
+
+  var iv = encrypted.slice(
+    0,
+    16
+  );
+
+  var hmac = encrypted.slice(
+    encrypted.length - 32
+  );
+
+  var ciphertext = encrypted.slice(
+    16,
+    encrypted.length - 32
+  );
+
+
+  console.log(
+    "IV:",
+    iv.length,
+    "bytes"
+  );
+
+  console.log(
+    "Ciphertext:",
+    ciphertext.length,
+    "bytes"
+  );
+
+  console.log(
+    "HMAC:",
+    hmac.length,
+    "bytes"
+  );
+
+/*
+ * Base64 -> Uint8Array
+ */
+
+/*
+ * Import AES-256 key
+ *
+ * Pass the actual ArrayBuffer rather than
+ * relying on Uint8Array being accepted by
+ * this particular environment.
+ */
+
+_context7.next = 36;
+
+return crypto.subtle.importKey(
+    "raw",
+    keyBytes.buffer,
+    {
+        name: "AES-CBC"
+    },
+    false,
+    ["decrypt"]
+);
+
+
+case 36:
+
+var cryptoKey = _context7.sent;
+
+
+
+  /*
+   * ----------------------------------------------------------
+   * AES-CBC decrypt
+   * ----------------------------------------------------------
+   */
+
+  _context7.next = 39;
+
+  return crypto.subtle.decrypt(
+    {
+      name: "AES-CBC",
+      iv: iv
+    },
+    cryptoKey,
+    ciphertext
+  );
+
+
+case 39:
+
+  var gzipBytes = new Uint8Array(
+    _context7.sent
+  );
+
+
+  console.log(
+    "Decrypted GZip:",
+    gzipBytes.length,
+    "bytes"
+  );
+
+
+  /*
+   * ----------------------------------------------------------
+   * GZip decompress
+   * ----------------------------------------------------------
+   */
+
+  var gzipStream =
+    new Blob([gzipBytes])
+      .stream()
+      .pipeThrough(
+        new DecompressionStream("gzip")
+      );
+
+
+  _context7.next = 43;
+
+  return new Response(
+    gzipStream
+  ).arrayBuffer();
+
+
+case 43:
+
+  var pdfBytes = _context7.sent;
+
+
+  console.log(
+    "Decompressed PDF:",
+    pdfBytes.byteLength,
+    "bytes"
+  );
+
+
+  /*
+   * ----------------------------------------------------------
+   * Give raw PDF bytes to PDF.js
+   * ----------------------------------------------------------
+   */
+
+  var dataParams = {
+    data: new Uint8Array(pdfBytes)
+  };
+
 			
 
             var loadingTask = (0, _pdfjsLib.getDocument)(dataParams);
