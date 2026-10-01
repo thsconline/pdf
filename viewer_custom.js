@@ -1453,338 +1453,490 @@ open: function() {
 
               document.title = gzipFileName;
 
+				/*
+				 * ========================================================
+				 * GZIP PROGRESS
+				 * ========================================================
+				 */
+
+				setPDFProgress(5);
 
-              /*
-               * ========================================================
-               * GZIP PROGRESS
-               * ========================================================
-               */
+				this._thscLoader.fragmentBuffers = [];
+				this._thscLoader.completedFragments = 0;
 
-              setPDFProgress(5);
 
+				/*
+				 * ========================================================
+				 * DOWNLOAD ALL FRAGMENTS CONCURRENTLY
+				 * ========================================================
+				 */
+
+				var fragmentPromises = [];
+
+				for (
+				  var i = 0;
+				  i < this._thscLoader.fragmentCount;
+				  i++
+				) {
+
+				  fragmentPromises.push(
+					(function(index) {
 
-              this._thscLoader.fragmentBuffers = [];
-              this._thscLoader.fragmentPromise = Promise.resolve();
+					  var currentLoader = _this2._thscLoader;
 
+					  var fragmentUrl =
+						currentLoader.fragmentBase +
+						currentLoader.gzipHash +
+						"." +
+						index;
 
-              /*
-               * ========================================================
-               * DOWNLOAD FRAGMENTS
-               * ========================================================
-               */
+
+					  /*
+					   * ------------------------------------------------
+					   * Download fragment.
+					   * ------------------------------------------------
+					   */
+
+					  return fetch(
+						fragmentUrl,
+						{
+						  method: "GET",
+						  cache: "no-cache"
+						}
+					  ).then(
+						function(fragmentResponse) {
 
-              for (
-                var i = 0;
-                i < this._thscLoader.fragmentCount;
-                i++
-              ) {
+						  if (!fragmentResponse.ok) {
 
-                this._thscLoader.fragmentPromise =
-                  this._thscLoader.fragmentPromise.then(
-                    function(index) {
+							throw new Error(
+							  "Unable to load fragment " +
+							  index +
+							  ": HTTP " +
+							  fragmentResponse.status
+							);
 
-                      return function() {
+						  }
 
-                        var currentLoader =
-                          _this2._thscLoader;
 
+						  return fragmentResponse.arrayBuffer();
 
-                        var startProgress =
-                          5 +
-                          (
-                            index /
-                            currentLoader.fragmentCount
-                          ) *
-                          75;
+						}
+					  ).then(
+						function(buffer) {
 
+						  /*
+						   * ------------------------------------------------
+						   * Store using the ORIGINAL fragment index.
+						   *
+						   * The requests may finish in any order, but the
+						   * array always retains the correct fragment order.
+						   * ------------------------------------------------
+						   */
 
-                        setPDFProgress(
-                          startProgress
-                        );
+						  currentLoader.fragmentBuffers[index] =
+							buffer;
 
 
-                        /*
-                         * ------------------------------------------------
-                         * Build fragment URL.
-                         *
-                         * Everything comes from currentLoader.
-                         * ------------------------------------------------
-                         */
+						  currentLoader.completedFragments =
+							currentLoader.completedFragments +
+							1;
 
-                        var fragmentUrl =
-                          currentLoader.fragmentBase +
-                          currentLoader.gzipHash +
-                          "." +
-                          index;
 
-                        return fetch(
-                          fragmentUrl,
-                          {
-                            method: "GET",
-                            cache: "no-cache"
-                          }
-                        ).then(
-                          function(fragmentResponse) {
+						  /*
+						   * ------------------------------------------------
+						   * Fragment progress:
+						   *
+						   * 5% → 80%
+						   * ------------------------------------------------
+						   */
 
-                            if (!fragmentResponse.ok) {
+						  var progress =
+							5 +
+							(
+							  currentLoader.completedFragments /
+							  currentLoader.fragmentCount
+							) *
+							75;
 
-                              throw new Error(
-                                "Unable to load fragment " +
-                                index +
-                                ": HTTP " +
-                                fragmentResponse.status
-                              );
-                            }
 
+						  setPDFProgress(
+							progress
+						  );
 
-                            return fragmentResponse.arrayBuffer();
-                          }
-                        ).then(
-                          function(buffer) {
 
-                            currentLoader.fragmentBuffers[index] =
-                              buffer;
+						  console.log(
+							"Fragment " +
+							index +
+							" loaded (" +
+							currentLoader.completedFragments +
+							" / " +
+							currentLoader.fragmentCount +
+							")"
+						  );
 
+						}
+					  );
 
-                            var completed =
-                              index + 1;
+					})(i)
+				  );
 
+				}
 
-                            var progress =
-                              5 +
-                              (
-                                completed /
-                                currentLoader.fragmentCount
-                              ) *
-                              75;
 
+				/*
+				 * ========================================================
+				 * WAIT FOR ALL FRAGMENTS
+				 * ========================================================
+				 *
+				 * All fetches are already running concurrently.
+				 *
+				 * Promise.all() only waits for them to finish.
+				 * It does NOT change their assembly order.
+				 * ========================================================
+				 */
 
-                            setPDFProgress(
-                              progress
-                            );
-                          }
-                        );
+				this._thscLoader.fragmentPromise =
+				  Promise.all(
+					fragmentPromises
+				  );
 
-                      };
 
-                    }(
-                      i
-                    )
-                  );
-              }
+				_context7.next = 50;
 
+				return this._thscLoader.fragmentPromise;
 
-              /*
-               * ========================================================
-               * WAIT FOR ALL FRAGMENTS
-               * ========================================================
-               */
 
-              _context7.next = 50;
+				case 50:
 
-              return this._thscLoader.fragmentPromise;
 
+				/*
+				 * ========================================================
+				 * ALL FRAGMENTS DOWNLOADED
+				 * ========================================================
+				 */
 
-            case 50:
+				setPDFProgress(80);
 
-              setPDFProgress(80);
 
+				/*
+				 * ========================================================
+				 * VALIDATE FRAGMENT STORAGE
+				 * ========================================================
+				 */
 
-              /*
-               * ========================================================
-               * VALIDATE
-               * ========================================================
-               */
+				if (!Array.isArray(this._thscLoader.fragmentBuffers)) {
 
-              if (
-                !Array.isArray(
-                  this._thscLoader.fragmentBuffers
-                )
-              ) {
+				  setPDFProgress(0);
 
-                setPDFProgress(0);
+				  throw new Error(
+					"fragmentBuffers is not an array."
+				  );
 
-                throw new Error(
-                  "fragmentBuffers is not an array."
-                );
-              }
+				}
 
 
-              if (
-                this._thscLoader.fragmentBuffers.length !==
-                this._thscLoader.fragmentCount
-              ) {
+				if (
+				  this._thscLoader.fragmentBuffers.length !==
+				  this._thscLoader.fragmentCount
+				) {
 
-                setPDFProgress(0);
+				  setPDFProgress(0);
 
-                throw new Error(
-                  "Expected " +
-                  this._thscLoader.fragmentCount +
-                  " fragments but received " +
-                  this._thscLoader.fragmentBuffers.length +
-                  "."
-                );
-              }
+				  throw new Error(
+					"Expected " +
+					this._thscLoader.fragmentCount +
+					" fragments but received " +
+					this._thscLoader.fragmentBuffers.length +
+					"."
+				  );
 
+				}
 
-              /*
-               * ========================================================
-               * COMBINE
-               * ========================================================
-               */
 
-              var totalLength =
-                this._thscLoader.fragmentBuffers.reduce(
-                  function(total, buffer) {
+				/*
+				 * ========================================================
+				 * VERIFY EVERY FRAGMENT EXISTS
+				 * ========================================================
+				 */
 
-                    if (!buffer) {
-                      throw new Error(
-                        "Missing fragment buffer."
-                      );
-                    }
+				for (
+				  var checkIndex = 0;
+				  checkIndex < this._thscLoader.fragmentCount;
+				  checkIndex++
+				) {
 
-                    return total + buffer.byteLength;
-                  },
-                  0
-                );
+				  if (
+					!this._thscLoader.fragmentBuffers[checkIndex]
+				  ) {
 
+					setPDFProgress(0);
 
-              var compressedData =
-                new Uint8Array(totalLength);
+					throw new Error(
+					  "Missing fragment " +
+					  checkIndex +
+					  "."
+					);
 
+				  }
 
-              var offset = 0;
+				}
 
 
-              for (
-                var j = 0;
-                j < this._thscLoader.fragmentBuffers.length;
-                j++
-              ) {
+				/*
+				 * ========================================================
+				 * COMBINE FRAGMENTS
+				 * ========================================================
+				 *
+				 * IMPORTANT:
+				 *
+				 * Regardless of the order in which the HTTP requests
+				 * finished, fragments are ALWAYS combined as:
+				 *
+				 *     0 → 1 → 2 → 3 → ...
+				 *
+				 * This preserves the original GZIP byte stream.
+				 * ========================================================
+				 */
 
-                var fragment =
-                  new Uint8Array(
-                    this._thscLoader.fragmentBuffers[j]
-                  );
+				var totalLength =
+				  this._thscLoader.fragmentBuffers.reduce(
+					function(total, buffer) {
 
+					  if (!buffer) {
 
-                compressedData.set(
-                  fragment,
-                  offset
-                );
+						throw new Error(
+						  "Missing fragment buffer."
+						);
 
+					  }
 
-                offset += fragment.length;
 
+					  return total +
+						buffer.byteLength;
 
-                var combineProgress =
-                  80 +
-                  (
-                    (
-                      j + 1
-                    ) /
-                    this._thscLoader.fragmentBuffers.length
-                  ) *
-                  10;
+					},
+					0
+				  );
 
 
-                setPDFProgress(
-                  combineProgress
-                );
-              }
+				var compressedData =
+				  new Uint8Array(
+					totalLength
+				  );
 
 
-              /*
-               * ========================================================
-               * DECOMPRESS
-               * ========================================================
-               */
+				var offset = 0;
 
-              if (
-                typeof DecompressionStream ===
-                "undefined"
-              ) {
 
-                setPDFProgress(0);
+				for (
+				  var j = 0;
+				  j < this._thscLoader.fragmentCount;
+				  j++
+				) {
 
-                throw new Error(
-                  "This browser does not support gzip decompression."
-                );
-              }
+				  var fragment =
+					new Uint8Array(
+					  this._thscLoader.fragmentBuffers[j]
+					);
 
 
-              setPDFProgress(90);
+				  compressedData.set(
+					fragment,
+					offset
+				  );
 
 
-              var decompressionStream =
-                new DecompressionStream("gzip");
+				  offset =
+					offset +
+					fragment.length;
 
 
-              var decompressedStream =
-                new Blob([
-                  compressedData
-                ])
-                  .stream()
-                  .pipeThrough(
-                    decompressionStream
-                  );
+				  /*
+				   * ------------------------------------------------
+				   * Combining progress:
+				   *
+				   * 80% → 90%
+				   * ------------------------------------------------
+				   */
 
+				  var combineProgress =
+					80 +
+					(
+					  (
+						j + 1
+					  ) /
+					  this._thscLoader.fragmentCount
+					) *
+					10;
 
-              /*
-               * ========================================================
-               * GET PDF
-               * ========================================================
-               */
 
-              _context7.next = 60;
+				  setPDFProgress(
+					combineProgress
+				  );
 
-              return new Response(
-                decompressedStream
-              ).arrayBuffer();
+				}
 
 
-            case 60:
+				console.log(
+				  "Combined gzip size:",
+				  compressedData.length
+				);
 
-              var pdfBuffer = _context7.sent;
 
+				/*
+				 * ========================================================
+				 * DECOMPRESS GZIP
+				 * ========================================================
+				 */
 
-              setPDFProgress(97);
+				if (
+				  typeof DecompressionStream ===
+				  "undefined"
+				) {
 
+				  /*
+				   * ------------------------------------------------
+				   * Browser does not support gzip decompression.
+				   *
+				   * Force the Google Apps Script workflow by adding:
+				   *
+				   *     gs=1
+				   *
+				   * to the current URL.
+				   * ------------------------------------------------
+				   */
 
-              this._thscLoader.fileName =
-                this._thscLoader.metadata.originalFileName ||
-                (
-                  this._thscLoader.gzipHash +
-                  ".pdf"
-                );
+				  var fallbackUrl =
+					new URL(
+					  window.location.href
+					);
 
 
-              this._thscLoader.dataParams = {
-                data: new Uint8Array(pdfBuffer)
-              };
+				  fallbackUrl.searchParams.set(
+					"gs",
+					"1"
+				  );
 
 
-              completePDFProgress();
+				  window.location.replace(
+					fallbackUrl.toString()
+				  );
 
 
-              /*
-               * ========================================================
-               * BOTH WORKFLOWS CONVERGE
-               * ========================================================
-               */
+				  return;
+				}
 
-              _context7.next = 80;
 
-              break;
+				setPDFProgress(90);
 
 
-              /*
-               * ========================================================
-               * PDF.JS
-               * ========================================================
-               */
+				var decompressionStream =
+				  new DecompressionStream(
+					"gzip"
+				  );
 
-            case 80:
+
+				var decompressedStream =
+				  new Blob([
+					compressedData
+				  ])
+					.stream()
+					.pipeThrough(
+					  decompressionStream
+					);
+
+
+				/*
+				 * ========================================================
+				 * GET DECOMPRESSED PDF
+				 * ========================================================
+				 */
+
+				_context7.next = 60;
+
+				return new Response(
+				  decompressedStream
+				).arrayBuffer();
+
+
+				case 60:
+
+				var pdfBuffer =
+				  _context7.sent;
+
+
+				/*
+				 * ========================================================
+				 * GZIP PDF IS READY
+				 * ========================================================
+				 */
+
+				setPDFProgress(97);
+
+
+				this._thscLoader.fileName =
+				  this._thscLoader.metadata.originalFileName ||
+				  (
+					this._thscLoader.gzipHash +
+					".pdf"
+				  );
+
+
+				console.log(
+				  "Loaded:",
+				  this._thscLoader.fileName
+				);
+
+
+				console.log(
+				  "PDF size:",
+				  pdfBuffer.byteLength,
+				  "bytes"
+				);
+
+
+				/*
+				 * ========================================================
+				 * PDF.JS DATA
+				 * ========================================================
+				 */
+
+				this._thscLoader.dataParams = {
+				  data:
+					new Uint8Array(
+					  pdfBuffer
+					)
+				};
+
+
+				/*
+				 * ========================================================
+				 * PDF DATA IS READY
+				 * ========================================================
+				 */
+
+				completePDFProgress();
+
+
+				/*
+				 * ========================================================
+				 * BOTH WORKFLOWS CONVERGE HERE
+				 * ========================================================
+				 */
+
+				_context7.next = 80;
+
+				break;
+
+
+				/*
+				 * ========================================================
+				 * PDF.JS
+				 * ========================================================
+				 */
+
+				case 80:
+
 
 				/* Ensure filename exists */
 			  if (!this._thscLoader.fileName) {
