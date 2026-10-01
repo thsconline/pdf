@@ -1191,37 +1191,6 @@ open: function() {
 
 
               /*
-               * --------------------------------------------------------
-               * Debug calculated values.
-               * --------------------------------------------------------
-               */
-
-              alert(
-                "CALCULATED VALUES\n\n" +
-                "viewno:\n" +
-                String(this._thscLoader.viewno) +
-                "\n\n" +
-                "titlex:\n" +
-                String(this._thscLoader.titlex) +
-                "\n\n" +
-                "endpoint:\n" +
-                String(this._thscLoader.endpoint) +
-                "\n\n" +
-                "legacyHash:\n" +
-                String(this._thscLoader.legacyHash) +
-                "\n\n" +
-                "fragmentHash:\n" +
-                String(this._thscLoader.fragmentHash) +
-                "\n\n" +
-                "fragmentBase:\n" +
-                String(this._thscLoader.fragmentBase) +
-                "\n\n" +
-                "metadataUrl:\n" +
-                String(this._thscLoader.metadataUrl)
-              );
-
-
-              /*
                * ========================================================
                * CHECK GZIP METADATA
                * ========================================================
@@ -1293,31 +1262,6 @@ open: function() {
                 encodeURIComponent(this._thscLoader.titlex) +
                 "&hash=" +
                 this._thscLoader.legacyHash;
-
-
-              /*
-               * --------------------------------------------------------
-               * Debug legacy request.
-               * --------------------------------------------------------
-               */
-
-              alert(
-                "LEGACY FETCH\n\n" +
-                "viewno:\n" +
-                String(this._thscLoader.viewno) +
-                "\n\n" +
-                "titlex:\n" +
-                String(this._thscLoader.titlex) +
-                "\n\n" +
-                "legacyHash:\n" +
-                String(this._thscLoader.legacyHash) +
-                "\n\n" +
-                "endpoint:\n" +
-                String(this._thscLoader.endpoint) +
-                "\n\n" +
-                "URL:\n" +
-                legacyUrl
-              );
 
 
               _context7.next = 12;
