@@ -1017,6 +1017,21 @@ open: function () {
 
 
 			  /*
+			   * --------------------------------------------------------
+			   * Variables shared across async-generator cases
+			   * --------------------------------------------------------
+			   */
+
+			  var fragmentBuffers = [];
+			  var fragmentPromise = Promise.resolve();
+			  var fragmentCount = 0;
+			  var metadata = null;
+			  var gzipHash = null;
+			  var dataParams = null;
+			  var fileName = null;
+
+
+			  /*
 			   * ========================================================
 			   * PDF.js BUILT-IN PROGRESS BAR
 			   * ========================================================
@@ -1065,17 +1080,6 @@ open: function () {
 			   */
 
 			  var progressTimer = null;
-
-
-			  /*
-			   * ========================================================
-			   * LEGACY PROGRESS
-			   * ========================================================
-			   *
-			   * Simulated over 45 seconds.
-			   *
-			   * Stops at 95% until the actual document arrives.
-			   */
 
 			  var legacyProgressStart = 0;
 			  var legacyProgressDuration = 45000;
@@ -1129,33 +1133,24 @@ open: function () {
 			   * ========================================================
 			   * HASHES
 			   * ========================================================
-			   *
-			   * Legacy:
-			   *     SHA256(viewno)
-			   *
-			   * GZIP:
-			   *     SHA256(viewno + "_" + titlex)
-			   * ========================================================
 			   */
 
 			  var legacyHash = SHA256(viewno);
+
 			  var fragmentHash = SHA256(viewno + "_" + titlex);
 
 
 			  /*
 			   * --------------------------------------------------------
-			   * SHOW HASH WHEN CALCULATED
+			   * Debug calculated hash
 			   * --------------------------------------------------------
 			   */
 
 			  alert(
 				"HASH CALCULATED\n\n" +
 				"viewno: " + String(viewno) + "\n" +
-				"titlex: " + String(titlex) + "\n\n" +
-				"legacyHash: " + String(legacyHash) + "\n" +
-				"legacyHash type: " + typeof legacyHash + "\n\n" +
-				"fragmentHash: " + String(fragmentHash) + "\n" +
-				"fragmentHash type: " + typeof fragmentHash
+				"titlex: " + String(titlex) + "\n\n" +				
+				"fragmentHash:\n" + String(fragmentHash)
 			  );
 
 
@@ -1198,15 +1193,6 @@ open: function () {
 				/*
 				 * ========================================================
 				 * SELECT WORKFLOW
-				 * ========================================================
-				 *
-				 * If hash.json exists:
-				 *
-				 *     GZIP workflow
-				 *
-				 * If hash.json does not exist:
-				 *
-				 *     Google Apps Script workflow
 				 * ========================================================
 				 */
 
@@ -1283,7 +1269,8 @@ open: function () {
 				}
 
 				var raw = json.data;
-				var fileName = json.name;
+
+				fileName = json.name;
 
 				document.title = json.field;
 
@@ -1305,7 +1292,7 @@ open: function () {
 				  legacyBytes[k] = binary.charCodeAt(k);
 				}
 
-				var dataParams = {
+				dataParams = {
 				  data: legacyBytes
 				};
 
@@ -1331,7 +1318,7 @@ open: function () {
 
 			  case 32:
 
-				var metadata = _context7.sent;
+				metadata = _context7.sent;
 
 				if (metadata.error) {
 				  setPDFProgress(0);
@@ -1341,12 +1328,42 @@ open: function () {
 
 
 				/*
+				 * --------------------------------------------------------
+				 * Use the hash supplied by metadata.
+				 * --------------------------------------------------------
+				 */
+
+				gzipHash = metadata.hash;
+
+				if (!gzipHash) {
+				  setPDFProgress(0);
+
+				  throw new Error(
+					"GZIP metadata does not contain a hash."
+				  );
+				}
+
+
+				/*
+				 * --------------------------------------------------------
+				 * Debug metadata hash.
+				 * --------------------------------------------------------
+				 */
+
+				alert(
+				  "GZIP METADATA\n\n" +
+				  "metadata.hash:\n" + String(gzipHash) + "\n\n" +
+				  "type: " + typeof gzipHash
+				);
+
+
+				/*
 				 * ========================================================
 				 * FRAGMENT COUNT
 				 * ========================================================
 				 */
 
-				var fragmentCount = Number(metadata.fragmentCount);
+				fragmentCount = Number(metadata.fragmentCount);
 
 				if (!Number.isInteger(fragmentCount) || fragmentCount < 1) {
 				  setPDFProgress(0);
@@ -1365,7 +1382,7 @@ open: function () {
 
 				document.title = gzipFileName;
 
-				console.log("GZIP document found:", fragmentHash);
+				console.log("GZIP document found:", gzipHash);
 				console.log("Fragments:", fragmentCount);
 
 
@@ -1377,7 +1394,7 @@ open: function () {
 				 * 0–5%    metadata
 				 * 5–80%   fragment downloads
 				 * 80–90%  combining fragments
-				 * 90–97%  gzip decompression
+				 * 90–97%  decompression
 				 * 97–100% PDF handoff
 				 * ========================================================
 				 */
@@ -1391,8 +1408,8 @@ open: function () {
 				 * ========================================================
 				 */
 
-				var fragmentBuffers = [];
-				var fragmentPromise = Promise.resolve();
+				fragmentBuffers = [];
+				fragmentPromise = Promise.resolve();
 
 
 				/*
@@ -1416,45 +1433,28 @@ open: function () {
 
 						/*
 						 * --------------------------------------------------
-						 * Construct fragment URL.
+						 * Construct fragment URL using metadata.hash.
 						 * --------------------------------------------------
 						 */
-						 
-						var cparams = new URLSearchParams(window.location.search);
 
-						var cviewno = cparams.get("base");
-						var ctitlex = cparams.get("field");
-						var currentFragmentHash = SHA256(cviewno + "_" + ctitlex);
-						
-						var fragmentBase = "https://thsconline.github.io/r2_1f3d2925c3eff6cef4a2dc2d306685f68b1ab0e5029ffbe7a0c8232ad5f47eb1/";
-						
 						var fragmentUrl =
 						  fragmentBase +
-						  currentFragmentHash +
+						  gzipHash +
 						  "." +
 						  index;
 
 
 						/*
 						 * --------------------------------------------------
-						 * SHOW HASH IMMEDIATELY BEFORE FETCH
+						 * Debug immediately before fetch.
 						 * --------------------------------------------------
 						 */
 
-
-
 						alert(
 						  "GZIP FRAGMENT FETCH\n\n" +
-						  "fragmentHash: " + String(fragmentHash) + "\n" +
-						  "fragmentHash type: " + typeof fragmentHash + "\n\n" +
+						  "hash:\n" + String(gzipHash) + "\n\n" +
 						  "index: " + String(index) + "\n\n" +
-						  "fragment URL:\n" + fragmentUrl
-						);
-
-
-						console.log(
-						  "Loading fragment:",
-						  fragmentUrl
+						  "URL:\n" + fragmentUrl
 						);
 
 
@@ -1528,6 +1528,34 @@ open: function () {
 
 
 				/*
+				 * --------------------------------------------------------
+				 * Safety check
+				 * --------------------------------------------------------
+				 */
+
+				if (!Array.isArray(fragmentBuffers)) {
+				  setPDFProgress(0);
+
+				  throw new Error(
+					"fragmentBuffers is not an array."
+				  );
+				}
+
+
+				if (fragmentBuffers.length !== fragmentCount) {
+				  setPDFProgress(0);
+
+				  throw new Error(
+					"Expected " +
+					fragmentCount +
+					" fragments but received " +
+					fragmentBuffers.length +
+					"."
+				  );
+				}
+
+
+				/*
 				 * ========================================================
 				 * COMBINE FRAGMENTS
 				 * ========================================================
@@ -1535,10 +1563,18 @@ open: function () {
 
 				var totalLength = fragmentBuffers.reduce(
 				  function(total, buffer) {
+
+					if (!buffer) {
+					  throw new Error(
+						"Missing fragment buffer."
+					  );
+					}
+
 					return total + buffer.byteLength;
 				  },
 				  0
 				);
+
 
 				var compressedData = new Uint8Array(totalLength);
 
@@ -1559,6 +1595,7 @@ open: function () {
 
 				  setPDFProgress(combineProgress);
 				}
+
 
 				console.log(
 				  "Combined gzip size:",
@@ -1617,9 +1654,9 @@ open: function () {
 
 				setPDFProgress(97);
 
-				var fileName =
+				fileName =
 				  metadata.originalFileName ||
-				  (fragmentHash + ".pdf");
+				  (gzipHash + ".pdf");
 
 				console.log("Loaded:", fileName);
 
@@ -1636,7 +1673,7 @@ open: function () {
 				 * ========================================================
 				 */
 
-				var dataParams = {
+				dataParams = {
 				  data: new Uint8Array(pdfBuffer)
 				};
 
