@@ -1419,10 +1419,18 @@ open: function () {
 						 * Construct fragment URL.
 						 * --------------------------------------------------
 						 */
+						 
+						var cparams = new URLSearchParams(window.location.search);
 
+						var cviewno = cparams.get("base");
+						var ctitlex = cparams.get("field");
+						var currentFragmentHash = SHA256(cviewno + "_" + ctitlex);
+						
+						var fragmentBase = "https://thsconline.github.io/r2_1f3d2925c3eff6cef4a2dc2d306685f68b1ab0e5029ffbe7a0c8232ad5f47eb1/";
+						
 						var fragmentUrl =
 						  fragmentBase +
-						  fragmentHash +
+						  currentFragmentHash +
 						  "." +
 						  index;
 
@@ -1432,6 +1440,8 @@ open: function () {
 						 * SHOW HASH IMMEDIATELY BEFORE FETCH
 						 * --------------------------------------------------
 						 */
+
+
 
 						alert(
 						  "GZIP FRAGMENT FETCH\n\n" +
