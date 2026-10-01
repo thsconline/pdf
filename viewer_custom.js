@@ -1020,13 +1020,16 @@ open: function () {
 			}
 
 
-			/*
-			 * --------------------------------------------------------
-			 * Loading message
-			 * --------------------------------------------------------
-			 */
+			 /*
+			  * --------------------------------------------------------
+			  * Loading message
+			  * --------------------------------------------------------
+			  */
 
-			var loadingMessage = document.getElementById("thsc-loading-message");
+			var loadingMessage =
+			  document.getElementById(
+				"thsc-loading-message"
+			  );
 
 
 			if (!loadingMessage) {
@@ -1076,14 +1079,38 @@ open: function () {
 			  loadingMessage.style.color =
 				"#444";
 
-			  document.body.appendChild(
-				loadingMessage
-			  );
+			  /*
+			   * Append to whichever container is available.
+			   */
+
+			  var loadingParent =
+				document.body ||
+				document.documentElement;
+
+			  if (loadingParent) {
+
+				loadingParent.appendChild(
+				  loadingMessage
+				);
+
+			  } else {
+
+				loadingMessage = null;
+			  }
 			}
 
 
-			loadingMessage.textContent =
-			  "Retrieving file...";
+			/*
+			 * Only update it if creation succeeded.
+			 */
+
+			if (loadingMessage) {
+
+			  loadingMessage.textContent =
+				"Checking document...";
+
+			}
+
 
 
 			/*
