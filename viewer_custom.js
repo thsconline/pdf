@@ -1004,14 +1004,19 @@ open: function () {
 			 * Production file loader
 			 */
 
-			var params = new URLSearchParams(window.location.search);
+			var params =
+			  new URLSearchParams(
+				window.location.search
+			  );
 
 			var viewno = params.get("base");
 			var titlex = params.get("field");
 			var endpoint = params.get("w");
 
 			if (!viewno || !titlex || !endpoint) {
-			  throw new Error("405 Method Not Allowed: Missing parameter.");
+			  throw new Error(
+				"405 Method Not Allowed: Missing parameter."
+			  );
 			}
 
 
@@ -1021,8 +1026,8 @@ open: function () {
 			 * --------------------------------------------------------
 			 */
 
-			var loadingMessage =
-			  document.getElementById("thsc-loading-message");
+			var loadingMessage = document.getElementById("thsc-loading-message");
+
 
 			if (!loadingMessage) {
 
@@ -1078,7 +1083,7 @@ open: function () {
 
 
 			loadingMessage.textContent =
-			  "Loading document...";
+			  "Retrieving file...";
 
 
 			/*
@@ -1086,10 +1091,10 @@ open: function () {
 			 * Hashes
 			 * --------------------------------------------------------
 			 *
-			 * Legacy workflow:
+			 * Legacy:
 			 *     SHA256(viewno)
 			 *
-			 * GZIP fragment workflow:
+			 * GZIP:
 			 *     SHA256(viewno + "_" + titlex)
 			 */
 
@@ -1097,12 +1102,17 @@ open: function () {
 			  SHA256(viewno);
 
 			var fragmentHash =
-			  SHA256(viewno + "_" + titlex);
+			  SHA256(
+				viewno + "_" + titlex
+			  );
 
 
 			/*
 			 * --------------------------------------------------------
-			 * GZIP fragment location
+			 * GZIP fragment repository
+			 * --------------------------------------------------------
+			 *
+			 * Hardcoded for testing.
 			 * --------------------------------------------------------
 			 */
 
@@ -1112,7 +1122,7 @@ open: function () {
 
 			/*
 			 * --------------------------------------------------------
-			 * Check for GZIP version
+			 * Check whether GZIP metadata exists
 			 * --------------------------------------------------------
 			 */
 
@@ -1120,10 +1130,6 @@ open: function () {
 			  fragmentBase +
 			  fragmentHash +
 			  ".json";
-
-
-			loadingMessage.textContent =
-			  "Checking document...";
 
 
 			_context7.next = 6;
@@ -1137,10 +1143,56 @@ open: function () {
 			);
 
 
+			/*
+			 * --------------------------------------------------------
+			 * Metadata response
+			 * --------------------------------------------------------
+			 */
+
 			case 6:
 
 			  var fragmentResponse =
 				_context7.sent;
+
+
+			/*
+			 * --------------------------------------------------------
+			 * Select workflow
+			 * --------------------------------------------------------
+			 */
+
+			if (fragmentResponse.ok) {
+
+			  /*
+			   * GZIP metadata exists.
+			   *
+			   * Continue to case 30.
+			   */
+
+			  loadingMessage.textContent =
+				"Loading document...";
+
+			  _context7.next = 30;
+
+			} else {
+
+			  /*
+			   * No GZIP metadata.
+			   *
+			   * Fall back to legacy Google Apps Script.
+			   */
+
+			  console.log(
+				"No GZIP fragment found. Using legacy workflow."
+			  );
+
+			  loadingMessage.textContent =
+				"Loading document...";
+
+			  _context7.next = 10;
+			}
+
+			break;
 
 
 			/*
@@ -1149,18 +1201,9 @@ open: function () {
 			 * ========================================================
 			 */
 
-			if (!fragmentResponse.ok) {
+			case 10:
 
-			  console.log(
-				"No GZIP fragment found. Using legacy workflow."
-			  );
-
-
-			  loadingMessage.textContent =
-				"Loading document...";
-
-
-			  _context7.next = 19;
+			  _context7.next = 12;
 
 			  return fetch(
 				"https://script.google.com/macros/s/" +
@@ -1175,97 +1218,128 @@ open: function () {
 			  );
 
 
-			  case 19:
+			case 12:
 
-				var response =
-				  _context7.sent;
+			  var response =
+				_context7.sent;
 
 
-				if (response.ok) {
-
-				  _context7.next = 22;
-
-				  break;
-				}
-
+			  if (!response.ok) {
 
 				if (loadingMessage) {
 				  loadingMessage.remove();
 				}
 
-
 				throw new Error(
-				  "HTTP " + response.status
+				  "HTTP " +
+				  response.status
 				);
+			  }
 
 
-			  case 22:
-
-				loadingMessage.textContent =
-				  "Preparing document...";
+			  loadingMessage.textContent =
+				"Preparing document...";
 
 
-				_context7.next = 24;
+			  _context7.next = 16;
 
-				return response.json();
-
-
-			  case 24:
-
-				var json =
-				  _context7.sent;
+			  return response.json();
 
 
-				if (json.error) {
+			case 16:
 
-				  if (loadingMessage) {
-					loadingMessage.remove();
-				  }
+			  var json =
+				_context7.sent;
 
-				  console.error(
-					"Server error:",
-					json.error
-				  );
 
-				  throw new Error(
-					json.error
-				  );
+			  if (json.error) {
+
+				if (loadingMessage) {
+				  loadingMessage.remove();
 				}
 
+				console.error(
+				  "Server error:",
+				  json.error
+				);
 
-				var raw =
-				  json.data;
-
-				var fileName =
-				  json.name;
-
-
-				document.title =
-				  json.field;
-
-
-				var altDownloadUrl =
-				  "https://thsconline.github.io/s/?download=" +
-				  encodeURIComponent(viewno) +
-				  "&n=" +
-				  encodeURIComponent(titlex);
+				throw new Error(
+				  json.error
+				);
+			  }
 
 
-				console.log(
-				  "Loaded:",
-				  fileName
+			  var raw =
+				json.data;
+
+			  var fileName =
+				json.name;
+
+
+			  document.title =
+				json.field;
+
+
+			  var altDownloadUrl =
+				"https://thsconline.github.io/s/?download=" +
+				encodeURIComponent(viewno) +
+				"&n=" +
+				encodeURIComponent(titlex);
+
+
+			  console.log(
+				"Loaded:",
+				fileName
+			  );
+
+
+			  /*
+			   * ------------------------------------------------------
+			   * Convert legacy Base64 to Uint8Array
+			   * ------------------------------------------------------
+			   */
+
+			  var binary =
+				atob(raw);
+
+			  var legacyBytes =
+				new Uint8Array(
+				  binary.length
 				);
 
 
-				var dataParams = {
-				  data: atob(raw)
-				};
+			  for (
+				var k = 0;
+				k < binary.length;
+				k++
+			  ) {
+
+				legacyBytes[k] =
+				  binary.charCodeAt(k);
+			  }
 
 
-				_context7.next = 80;
+			  var dataParams = {
+				data: legacyBytes
+			  };
 
-				break;
-			}
+
+			  /*
+			   * ------------------------------------------------------
+			   * Legacy workflow is ready.
+			   *
+			   * Jump directly to PDF.js.
+			   * ------------------------------------------------------
+			   */
+
+			  if (loadingMessage) {
+				loadingMessage.remove();
+			  }
+
+
+			  _context7.next = 80;
+
+			  break;
 
 
 			/*
@@ -1274,12 +1348,18 @@ open: function () {
 			 * ========================================================
 			 */
 
-			_context7.next = 30;
-
-			return fragmentResponse.json();
-
-
 			case 30:
+
+			  /*
+			   * Metadata exists, so parse it.
+			   */
+
+			  _context7.next = 32;
+
+			  return fragmentResponse.json();
+
+
+			case 32:
 
 			  var metadata =
 				_context7.sent;
@@ -1297,12 +1377,22 @@ open: function () {
 			  }
 
 
+			  /*
+			   * ------------------------------------------------------
+			   * Fragment count
+			   * ------------------------------------------------------
+			   */
+
 			  var fragmentCount =
-				Number(metadata.fragmentCount);
+				Number(
+				  metadata.fragmentCount
+				);
 
 
 			  if (
-				!Number.isInteger(fragmentCount) ||
+				!Number.isInteger(
+				  fragmentCount
+				) ||
 				fragmentCount < 1
 			  ) {
 
@@ -1316,15 +1406,26 @@ open: function () {
 			  }
 
 
-			  document.title =
+			  /*
+			   * ------------------------------------------------------
+			   * Document metadata
+			   * ------------------------------------------------------
+			   */
+
+			  var gzipFileName =
 				metadata.originalFileName ||
 				titlex;
+
+
+			  document.title =
+				gzipFileName;
 
 
 			  console.log(
 				"GZIP document found:",
 				fragmentHash
 			  );
+
 
 			  console.log(
 				"Fragments:",
@@ -1336,9 +1437,20 @@ open: function () {
 			   * ------------------------------------------------------
 			   * Download fragments
 			   * ------------------------------------------------------
+			   *
+			   * Files are:
+			   *
+			   *     HASH.0
+			   *     HASH.1
+			   *     HASH.2
+			   *     ...
+			   *
+			   * There is intentionally no fragments[]
+			   * array in the JSON metadata.
 			   */
 
-			  var fragmentBuffers = [];
+			  var fragmentBuffers =
+				[];
 
 			  var fragmentPromise =
 				Promise.resolve();
@@ -1383,9 +1495,13 @@ open: function () {
 							cache: "no-cache"
 						  }
 						).then(
-						  function(fragmentResponse) {
+						  function(
+							fragmentResponse
+						  ) {
 
-							if (!fragmentResponse.ok) {
+							if (
+							  !fragmentResponse.ok
+							) {
 
 							  throw new Error(
 								"Unable to load fragment " +
@@ -1396,20 +1512,24 @@ open: function () {
 							}
 
 
-							return fragmentResponse.arrayBuffer();
-
+							return fragmentResponse
+							  .arrayBuffer();
 						  }
 						).then(
 						  function(buffer) {
 
 							/*
-							 * Store by index rather than push,
-							 * so ordering is guaranteed.
+							 * Store by index.
+							 *
+							 * This guarantees:
+							 *
+							 * fragmentBuffers[0] = HASH.0
+							 * fragmentBuffers[1] = HASH.1
+							 * etc.
 							 */
 
 							fragmentBuffers[index] =
 							  buffer;
-
 						  }
 						);
 
@@ -1419,6 +1539,12 @@ open: function () {
 				  );
 			  }
 
+
+			  /*
+			   * ------------------------------------------------------
+			   * Wait for all fragments
+			   * ------------------------------------------------------
+			   */
 
 			  _context7.next = 50;
 
@@ -1439,18 +1565,29 @@ open: function () {
 
 			  var totalLength =
 				fragmentBuffers.reduce(
-				  function(total, buffer) {
-					return total + buffer.byteLength;
+				  function(
+					total,
+					buffer
+				  ) {
+
+					return (
+					  total +
+					  buffer.byteLength
+					);
+
 				  },
 				  0
 				);
 
 
 			  var compressedData =
-				new Uint8Array(totalLength);
+				new Uint8Array(
+				  totalLength
+				);
 
 
-			  var offset = 0;
+			  var offset =
+				0;
 
 
 			  for (
@@ -1471,7 +1608,8 @@ open: function () {
 				);
 
 
-				offset += fragment.length;
+				offset +=
+				  fragment.length;
 			  }
 
 
@@ -1507,7 +1645,9 @@ open: function () {
 
 
 			  var decompressionStream =
-				new DecompressionStream("gzip");
+				new DecompressionStream(
+				  "gzip"
+				);
 
 
 			  var decompressedStream =
@@ -1519,6 +1659,12 @@ open: function () {
 					decompressionStream
 				  );
 
+
+			  /*
+			   * ------------------------------------------------------
+			   * Get decompressed PDF
+			   * ------------------------------------------------------
+			   */
 
 			  _context7.next = 60;
 
@@ -1535,24 +1681,16 @@ open: function () {
 
 			  /*
 			   * ------------------------------------------------------
-			   * Remove loading message
-			   * ------------------------------------------------------
-			   */
-
-			  if (loadingMessage) {
-				loadingMessage.remove();
-			  }
-
-
-			  /*
-			   * ------------------------------------------------------
-			   * PDF.js data
+			   * GZIP PDF is ready
 			   * ------------------------------------------------------
 			   */
 
 			  var fileName =
 				metadata.originalFileName ||
-				(fragmentHash + ".pdf");
+				(
+				  fragmentHash +
+				  ".pdf"
+				);
 
 
 			  console.log(
@@ -1568,95 +1706,197 @@ open: function () {
 			  );
 
 
+			  /*
+			   * ------------------------------------------------------
+			   * PDF.js data
+			   * ------------------------------------------------------
+			   */
+
 			  var dataParams = {
-				data: new Uint8Array(
-				  pdfBuffer
-				)
+				data:
+				  new Uint8Array(
+					pdfBuffer
+				  )
 			  };
 
 
+			  /*
+			   * ------------------------------------------------------
+			   * Remove loading screen.
+			   * ------------------------------------------------------
+			   */
+
+			  if (loadingMessage) {
+				loadingMessage.remove();
+			  }
+
+
+			  /*
+			   * ------------------------------------------------------
+			   * Both workflows converge here.
+			   * ------------------------------------------------------
+			   */
+
+			  _context7.next = 80;
+
+			  break;
+
+
+			/*
+			 * ========================================================
+			 * PDF.JS
+			 * ========================================================
+			 */
+
 			case 80:
 
-
-            var loadingTask = (0, _pdfjsLib.getDocument)(dataParams);
-
-            this.pdfLoadingTask = loadingTask;
-
-
-            loadingTask.onPassword = function (updateCallback, reason) {
-              _this2.passwordPrompt.setUpdateCallback(updateCallback, reason);
-              _this2.passwordPrompt.open();
-            };
+			  var loadingTask =
+				(0, _pdfjsLib.getDocument)(
+				  dataParams
+				);
 
 
-            loadingTask.onProgress = function (_ref) {
-              var loaded = _ref.loaded,
-                  total = _ref.total;
-
-              _this2.progress(loaded / total);
-            };
+			  this.pdfLoadingTask =
+				loadingTask;
 
 
-            loadingTask.onUnsupportedFeature = this.fallback.bind(this);
+			  loadingTask.onPassword =
+				function(
+				  updateCallback,
+				  reason
+				) {
+
+				  _this2.passwordPrompt
+					.setUpdateCallback(
+					  updateCallback,
+					  reason
+					);
+
+				  _this2.passwordPrompt.open();
+				};
 
 
-            return _context7.abrupt("return",
-              loadingTask.promise.then(function (pdfDocument) {
-                _this2.load(pdfDocument);
+			  loadingTask.onProgress =
+				function(_ref) {
 
-              }, function (exception) {
+				  var loaded =
+					_ref.loaded;
 
-                if (loadingTask !== _this2.pdfLoadingTask) {
-                  return undefined;
-                }
-
-
-                var message = exception && exception.message;
-                var loadingErrorMessage;
+				  var total =
+					_ref.total;
 
 
-                if (exception instanceof _pdfjsLib.InvalidPDFException) {
-                  loadingErrorMessage = _this2.l10n.get(
-                    'invalid_file_error',
-                    null,
-                    'Invalid or corrupted PDF file.'
-                  );
-                } 
-                else if (exception instanceof _pdfjsLib.MissingPDFException) {
-                  loadingErrorMessage = _this2.l10n.get(
-                    'missing_file_error',
-                    null,
-                    'Missing PDF file.'
-                  );
-                } 
-                else if (exception instanceof _pdfjsLib.UnexpectedResponseException) {
-                  loadingErrorMessage = _this2.l10n.get(
-                    'unexpected_response_error',
-                    null,
-                    'Unexpected server response.'
-                  );
-                } 
-                else {
-                  loadingErrorMessage = _this2.l10n.get(
-                    'loading_error',
-                    null,
-                    'An error occurred while loading the PDF.'
-                  );
-                }
+				  _this2.progress(
+					loaded / total
+				  );
+				};
 
 
-                return loadingErrorMessage.then(function (msg) {
+			  loadingTask.onUnsupportedFeature =
+				this.fallback.bind(
+				  this
+				);
 
-                  _this2.error(msg, {
-                    message: message
-                  });
 
-                  throw new Error(msg);
+			  return _context7.abrupt(
+				"return",
+				loadingTask.promise.then(
 
-                });
+				  function(pdfDocument) {
 
-              })
-            );
+					_this2.load(
+					  pdfDocument
+					);
+
+				  },
+
+				  function(exception) {
+
+					if (
+					  loadingTask !==
+					  _this2.pdfLoadingTask
+					) {
+					  return undefined;
+					}
+
+
+					var message =
+					  exception &&
+					  exception.message;
+
+
+					var loadingErrorMessage;
+
+
+					if (
+					  exception instanceof
+					  _pdfjsLib.InvalidPDFException
+					) {
+
+					  loadingErrorMessage =
+						_this2.l10n.get(
+						  'invalid_file_error',
+						  null,
+						  'Invalid or corrupted PDF file.'
+						);
+
+					}
+					else if (
+					  exception instanceof
+					  _pdfjsLib.MissingPDFException
+					) {
+
+					  loadingErrorMessage =
+						_this2.l10n.get(
+						  'missing_file_error',
+						  null,
+						  'Missing PDF file.'
+						);
+
+					}
+					else if (
+					  exception instanceof
+					  _pdfjsLib.UnexpectedResponseException
+					) {
+
+					  loadingErrorMessage =
+						_this2.l10n.get(
+						  'unexpected_response_error',
+						  null,
+						  'Unexpected server response.'
+						);
+
+					}
+					else {
+
+					  loadingErrorMessage =
+						_this2.l10n.get(
+						  'loading_error',
+						  null,
+						  'An error occurred while loading the PDF.'
+						);
+					}
+
+
+					return loadingErrorMessage.then(
+					  function(msg) {
+
+						_this2.error(
+						  msg,
+						  {
+							message: message
+						  }
+						);
+
+						throw new Error(
+						  msg
+						);
+					  }
+					);
+				  }
+				)
+			  );
+
 
 
           case "end":
