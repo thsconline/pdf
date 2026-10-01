@@ -1788,10 +1788,10 @@ open: function() {
 
 				/* Ensure filename exists */
 			  if (!this._thscLoader.fileName) {
-				this._thscLoader.fileName = "404_html.pdf";
+				this._thscLoader.fileName = "document.pdf";
 			  }
 
-			  this.contentDispositionFilename = this._thscLoader.fileName;
+			  const fileName = this._thscLoader.fileName;
 			  
 
               var loadingTask =
