@@ -962,1327 +962,703 @@ open: function () {
             _context7.next = 3;
             return this.close();
 
-          case 3:
+			case 3:
 
-            var workerParameters = _app_options.AppOptions.getAll(_app_options.OptionKind.WORKER);
+			  var workerParameters = _app_options.AppOptions.getAll(_app_options.OptionKind.WORKER);
 
-            for (var key in workerParameters) {
-              _pdfjsLib.GlobalWorkerOptions[key] = workerParameters[key];
-            }
+			  for (var key in workerParameters) {
+				_pdfjsLib.GlobalWorkerOptions[key] = workerParameters[key];
+			  }
 
-            var parameters = Object.create(null);
+			  var parameters = Object.create(null);
 
-            if (typeof file === 'string') {
-              //this.setTitleUsingUrl(file);
-              parameters.url = file;
-            } 
-            else if (file && 'byteLength' in file) {
-              parameters.data = file;
-            } 
-            else if (file.url && file.originalUrl) {
-              //this.setTitleUsingUrl(file.originalUrl);
-              parameters.url = file.url;
-            }
+			  if (typeof file === 'string') {
+				//this.setTitleUsingUrl(file);
+				parameters.url = file;
+			  } else if (file && 'byteLength' in file) {
+				parameters.data = file;
+			  } else if (file.url && file.originalUrl) {
+				//this.setTitleUsingUrl(file.originalUrl);
+				parameters.url = file.url;
+			  }
 
-            var apiParameters = _app_options.AppOptions.getAll(_app_options.OptionKind.API);
+			  var apiParameters = _app_options.AppOptions.getAll(_app_options.OptionKind.API);
 
-            for (var _key in apiParameters) {
-              parameters[_key] = apiParameters[_key];
-            }
+			  for (var _key in apiParameters) {
+				parameters[_key] = apiParameters[_key];
+			  }
 
-            if (args) {
-              for (var prop in args) {
-                if (prop === 'length') {
-                  this.pdfDocumentProperties.setFileSize(args[prop]);
-                }
+			  if (args) {
+				for (var prop in args) {
+				  if (prop === 'length') {
+					this.pdfDocumentProperties.setFileSize(args[prop]);
+				  }
 
-                parameters[prop] = args[prop];
-              }
-            }
-
-			/*
-			 * --------------------------------------------------------
-			 * Production file loader
-			 * --------------------------------------------------------
-			 */
-
-			var params =
-			  new URLSearchParams(
-				window.location.search
-			  );
-
-			var viewno =
-			  params.get("base");
-
-			var titlex =
-			  params.get("field");
-
-			var endpoint =
-			  params.get("w");
-
-
-			if (
-			  !viewno ||
-			  !titlex ||
-			  !endpoint
-			) {
-
-			  throw new Error(
-				"405 Method Not Allowed: Missing parameter."
-			  );
-
-			}
-
-
-			/*
-			 * ========================================================
-			 * PDF.js BUILT-IN PROGRESS BAR
-			 * ========================================================
-			 *
-			 * We do NOT create our own loading overlay.
-			 *
-			 * The two workflows use the PDF.js loading bar:
-			 *
-			 *     Legacy:
-			 *         simulated 45 second progress
-			 *
-			 *     GZIP:
-			 *         actual fragment progress
-			 *
-			 * The progress is intentionally capped below 100%
-			 * until the PDF data is actually ready.
-			 * ========================================================
-			 */
-
-
-			/*
-			 * --------------------------------------------------------
-			 * Set PDF.js loading progress
-			 * --------------------------------------------------------
-			 */
-
-			function setPDFProgress(percent) {
-
-			  percent =
-				Math.max(
-				  0,
-				  Math.min(
-					100,
-					Number(percent) || 0
-				  )
-				);
+				  parameters[prop] = args[prop];
+				}
+			  }
 
 
 			  /*
-			   * ------------------------------------------------------
-			   * PDF.js versions exposing progress()
-			   * ------------------------------------------------------
+			   * --------------------------------------------------------
+			   * Production file loader
+			   * --------------------------------------------------------
 			   */
 
-			  if (
-				typeof PDFViewerApplication !==
-				"undefined" &&
-				typeof PDFViewerApplication.progress ===
-				"function"
-			  ) {
+			  var params = new URLSearchParams(window.location.search);
 
-				PDFViewerApplication.progress(
-				  percent
-				);
+			  var viewno = params.get("base");
+			  var titlex = params.get("field");
+			  var endpoint = params.get("w");
 
-				return;
+			  if (!viewno || !titlex || !endpoint) {
+				throw new Error("405 Method Not Allowed: Missing parameter.");
 			  }
 
 
 			  /*
-			   * ------------------------------------------------------
-			   * PDF.js versions exposing loadingBar
-			   * ------------------------------------------------------
-			 */
-
-			  if (
-				typeof PDFViewerApplication !==
-				"undefined" &&
-				PDFViewerApplication.loadingBar &&
-				typeof PDFViewerApplication.loadingBar.setPercent ===
-				"function"
-			  ) {
-
-				PDFViewerApplication.loadingBar.setPercent(
-				  percent
-				);
-
-				return;
-			  }
-
-
-			  /*
-			   * ------------------------------------------------------
-			   * Fallback for older PDF.js viewers.
-			   * ------------------------------------------------------
+			   * ========================================================
+			   * PDF.js BUILT-IN PROGRESS BAR
+			   * ========================================================
 			   */
 
-			  var loadingBar =
-				document.getElementById(
-				  "loadingBar"
-				);
-
-
-			  if (!loadingBar) {
-				return;
-			  }
-
-
-			  var progress =
-				loadingBar.querySelector(
-				  ".progress"
-				);
-
-
-			  if (progress) {
-
-				progress.style.width =
-				  percent +
-				  "%";
-
-			  }
-
-
-			  loadingBar.setAttribute(
-				"aria-valuenow",
-				String(percent)
-			  );
-
-			}
-
-
-			/*
-			 * ========================================================
-			 * PROGRESS TIMER
-			 * ========================================================
-			 */
-
-			var progressTimer =
-			  null;
-
-
-			/*
-			 * ========================================================
-			 * LEGACY PROGRESS
-			 * ========================================================
-			 *
-			 * The Google Apps Script can take a variable amount of
-			 * time, so this is intentionally simulated.
-			 *
-			 * Duration:
-			 *
-			 *     45 seconds
-			 *
-			 * Maximum:
-			 *
-			 *     95%
-			 *
-			 * The final 5% is only completed when the actual PDF
-			 * data has arrived and been converted.
-			 * ========================================================
-			 */
-
-			var legacyProgressStart =
-			  0;
-
-			var legacyProgressDuration =
-			  45000;
-
-			var legacyProgressMaximum =
-			  95;
-
-
-			/*
-			 * --------------------------------------------------------
-			 * Stop progress animation
-			 * --------------------------------------------------------
-			 */
-
-			function stopProgressTimer() {
-
-			  if (
-				progressTimer !==
-				null
-			  ) {
-
-				cancelAnimationFrame(
-				  progressTimer
-				);
-
-				progressTimer =
-				  null;
-
-			  }
-
-			}
-
-
-			/*
-			 * --------------------------------------------------------
-			 * Start legacy 45 second progress
-			 * --------------------------------------------------------
-			 */
-
-			function startLegacyProgress() {
-
-			  stopProgressTimer();
-
-
-			  legacyProgressStart =
-				Date.now();
-
-
-			  setPDFProgress(
-				0
-			  );
-
-
-			  function update() {
-
-				var elapsed =
-				  Date.now() -
-				  legacyProgressStart;
-
-
-				var ratio =
-				  elapsed /
-				  legacyProgressDuration;
-
-
-				/*
-				 * Cap at 95%.
-				 */
-
-				var percent =
-				  Math.min(
-					ratio,
-					1
-				  ) *
-				  legacyProgressMaximum;
-
-
-				setPDFProgress(
-				  percent
-				);
-
+			  function setPDFProgress(percent) {
+				percent = Math.max(0, Math.min(100, Number(percent) || 0));
 
 				if (
-				  ratio <
-				  1
+				  typeof PDFViewerApplication !== "undefined" &&
+				  typeof PDFViewerApplication.progress === "function"
 				) {
-
-				  progressTimer =
-					requestAnimationFrame(
-					  update
-					);
-
+				  PDFViewerApplication.progress(percent);
+				  return;
 				}
 
+				if (
+				  typeof PDFViewerApplication !== "undefined" &&
+				  PDFViewerApplication.loadingBar &&
+				  typeof PDFViewerApplication.loadingBar.setPercent === "function"
+				) {
+				  PDFViewerApplication.loadingBar.setPercent(percent);
+				  return;
+				}
+
+				var loadingBar = document.getElementById("loadingBar");
+
+				if (!loadingBar) {
+				  return;
+				}
+
+				var progress = loadingBar.querySelector(".progress");
+
+				if (progress) {
+				  progress.style.width = percent + "%";
+				}
+
+				loadingBar.setAttribute("aria-valuenow", String(percent));
 			  }
 
 
-			  progressTimer =
-				requestAnimationFrame(
-				  update
-				);
+			  /*
+			   * ========================================================
+			   * PROGRESS TIMER
+			   * ========================================================
+			   */
 
-			}
-
-
-			/*
-			 * --------------------------------------------------------
-			 * Complete progress
-			 * --------------------------------------------------------
-			 */
-
-			function completePDFProgress() {
-
-			  stopProgressTimer();
+			  var progressTimer = null;
 
 
-			  setPDFProgress(
-				100
+			  /*
+			   * ========================================================
+			   * LEGACY PROGRESS
+			   * ========================================================
+			   *
+			   * Simulated over 45 seconds.
+			   *
+			   * Stops at 95% until the actual document arrives.
+			   */
+
+			  var legacyProgressStart = 0;
+			  var legacyProgressDuration = 45000;
+			  var legacyProgressMaximum = 95;
+
+
+			  function stopProgressTimer() {
+				if (progressTimer !== null) {
+				  cancelAnimationFrame(progressTimer);
+				  progressTimer = null;
+				}
+			  }
+
+
+			  function startLegacyProgress() {
+				stopProgressTimer();
+
+				legacyProgressStart = Date.now();
+
+				setPDFProgress(0);
+
+				function update() {
+				  var elapsed = Date.now() - legacyProgressStart;
+				  var ratio = elapsed / legacyProgressDuration;
+				  var percent = Math.min(ratio, 1) * legacyProgressMaximum;
+
+				  setPDFProgress(percent);
+
+				  if (ratio < 1) {
+					progressTimer = requestAnimationFrame(update);
+				  }
+				}
+
+				progressTimer = requestAnimationFrame(update);
+			  }
+
+
+			  function completePDFProgress() {
+				stopProgressTimer();
+				setPDFProgress(100);
+			  }
+
+
+			  function resetPDFProgress() {
+				stopProgressTimer();
+				setPDFProgress(0);
+			  }
+
+
+			  /*
+			   * ========================================================
+			   * HASHES
+			   * ========================================================
+			   *
+			   * Legacy:
+			   *     SHA256(viewno)
+			   *
+			   * GZIP:
+			   *     SHA256(viewno + "_" + titlex)
+			   * ========================================================
+			   */
+
+			  var legacyHash = SHA256(viewno);
+			  var fragmentHash = SHA256(viewno + "_" + titlex);
+
+
+			  /*
+			   * --------------------------------------------------------
+			   * SHOW HASH WHEN CALCULATED
+			   * --------------------------------------------------------
+			   */
+
+			  alert(
+				"HASH CALCULATED\n\n" +
+				"viewno: " + String(viewno) + "\n" +
+				"titlex: " + String(titlex) + "\n\n" +
+				"legacyHash: " + String(legacyHash) + "\n" +
+				"legacyHash type: " + typeof legacyHash + "\n\n" +
+				"fragmentHash: " + String(fragmentHash) + "\n" +
+				"fragmentHash type: " + typeof fragmentHash
 			  );
 
-			}
+
+			  /*
+			   * ========================================================
+			   * GZIP FRAGMENT REPOSITORY
+			   * ========================================================
+			   */
+
+			  var fragmentBase = "https://thsconline.github.io/r2_1f3d2925c3eff6cef4a2dc2d306685f68b1ab0e5029ffbe7a0c8232ad5f47eb1/";
 
 
-			/*
-			 * --------------------------------------------------------
-			 * Reset progress
-			 * --------------------------------------------------------
-			 */
+			  /*
+			   * ========================================================
+			   * CHECK WHETHER GZIP METADATA EXISTS
+			   * ========================================================
+			   */
 
-			function resetPDFProgress() {
+			  var metadataUrl = fragmentBase + fragmentHash + ".json";
 
-			  stopProgressTimer();
+			  _context7.next = 6;
 
-
-			  setPDFProgress(
-				0
-			  );
-
-			}
-
-
-			/*
-			 * ========================================================
-			 * HASHES
-			 * ========================================================
-			 *
-			 * Legacy:
-			 *
-			 *     SHA256(viewno)
-			 *
-			 *
-			 * GZIP:
-			 *
-			 *     SHA256(viewno + "_" + titlex)
-			 * ========================================================
-			 */
-
-			var legacyHash =
-			  SHA256(
-				viewno
-			  );
-
-
-			var fragmentHash =
-			  SHA256(
-				viewno +
-				"_" +
-				titlex
-			  );
-
-
-			console.log("viewno:", viewno);
-			console.log("titlex:", titlex);
-			console.log("legacyHash:", legacyHash);
-			console.log("fragmentHash:", fragmentHash);
-			console.log("metadataUrl:", metadataUrl);
-
-			/*
-			 * ========================================================
-			 * GZIP FRAGMENT REPOSITORY
-			 * ========================================================
-			 *
-			 * Hardcoded for testing.
-			 * ========================================================
-			 */
-
-			var fragmentBase =
-			  "https://thsconline.github.io/r2_1f3d2925c3eff6cef4a2dc2d306685f68b1ab0e5029ffbe7a0c8232ad5f47eb1/";
-
-
-			/*
-			 * ========================================================
-			 * CHECK WHETHER GZIP METADATA EXISTS
-			 * ========================================================
-			 */
-
-			var metadataUrl =
-			  fragmentBase +
-			  fragmentHash +
-			  ".json";
-
-
-			_context7.next =
-			  6;
-
-
-			return fetch(
-			  metadataUrl,
-			  {
+			  return fetch(metadataUrl, {
 				method: "GET",
 				cache: "no-cache"
-			  }
-			);
-
-
-			/*
-			 * ========================================================
-			 * METADATA RESPONSE
-			 * ========================================================
-			 */
-
-			case 6:
-
-			  var fragmentResponse =
-				_context7.sent;
-
-
-			/*
-			 * ========================================================
-			 * SELECT WORKFLOW
-			 * ========================================================
-			 *
-			 * THIS IS THE IMPORTANT BRANCH.
-			 *
-			 * If hash.json exists:
-			 *
-			 *     → GZIP workflow
-			 *
-			 * If hash.json does not exist:
-			 *
-			 *     → Google Apps Script workflow
-			 * ========================================================
-			 */
-
-			if (
-			  fragmentResponse.ok
-			) {
-
-			  /*
-			   * ======================================================
-			   * GZIP WORKFLOW
-			   * ======================================================
-			   *
-			   * hash.json exists.
-			   */
-
-			  console.log(
-				"GZIP metadata found."
-			  );
+			  });
 
 
 			  /*
-			   * Start GZIP progress.
+			   * ========================================================
+			   * METADATA RESPONSE
+			   * ========================================================
 			   */
 
-			  resetPDFProgress();
+			  case 6:
 
-
-			  setPDFProgress(
-				2
-			  );
-
-
-			  _context7.next =
-				30;
-
-			} else {
-
-			  /*
-			   * ======================================================
-			   * LEGACY WORKFLOW
-			   * ======================================================
-			   *
-			   * hash.json was not found.
-			   *
-			   * Fall back to Google Apps Script.
-			   */
-
-			  console.log(
-				"No GZIP fragment found. Using legacy workflow."
-			  );
-
-
-			  /*
-			   * Start the 45-second simulated progress bar.
-			   */
-
-			  startLegacyProgress();
-
-
-			  _context7.next =
-				10;
-
-			}
-
-			break;
-
-
-			/*
-			 * ========================================================
-			 * LEGACY GOOGLE APPS SCRIPT WORKFLOW
-			 * ========================================================
-			 */
-
-			case 10:
-
-			  _context7.next =
-				12;
-
-
-			  return fetch(
-				"https://script.google.com/macros/s/" +
-				endpoint +
-				"/exec?export=view" +
-				"&base=" +
-				encodeURIComponent(
-				  viewno
-				) +
-				"&field=" +
-				encodeURIComponent(
-				  titlex
-				) +
-				"&hash=" +
-				legacyHash
-			  );
-
-
-			case 12:
-
-			  var response =
-				_context7.sent;
-
-
-			/*
-			 * --------------------------------------------------------
-			 * Stop the 45 second simulation because the HTTP response
-			 * has actually arrived.
-			 * --------------------------------------------------------
-			 */
-
-			stopProgressTimer();
-
-
-			/*
-			 * --------------------------------------------------------
-			 * HTTP error
-			 * --------------------------------------------------------
-			 */
-
-			if (
-			  !response.ok
-			) {
-
-			  setPDFProgress(
-				0
-			  );
-
-
-			  throw new Error(
-				"HTTP " +
-				response.status
-			  );
-
-			}
-
-
-			/*
-			 * --------------------------------------------------------
-			 * Response received.
-			 *
-			 * Move close to completion while JSON/Base64 is processed.
-			 * --------------------------------------------------------
-			 */
-
-			setPDFProgress(
-			  96
-			);
-
-
-			_context7.next =
-			  16;
-
-
-			return response.json();
-
-
-			case 16:
-
-			  var json =
-				_context7.sent;
-
-
-			/*
-			 * --------------------------------------------------------
-			 * Server error
-			 * --------------------------------------------------------
-			 */
-
-			if (
-			  json.error
-			) {
-
-			  setPDFProgress(
-				0
-			  );
-
-
-			  console.error(
-				"Server error:",
-				json.error
-			  );
-
-
-			  throw new Error(
-				json.error
-			  );
-
-			}
-
-
-			var raw =
-			  json.data;
-
-
-			var fileName =
-			  json.name;
-
-
-			/*
-			 * --------------------------------------------------------
-			 * Document title
-			 * --------------------------------------------------------
-			 */
-
-			document.title =
-			  json.field;
-
-
-			/*
-			 * --------------------------------------------------------
-			 * Alternative download URL
-			 * --------------------------------------------------------
-			 */
-
-			var altDownloadUrl =
-			  "https://thsconline.github.io/s/?download=" +
-			  encodeURIComponent(
-				viewno
-			  ) +
-			  "&n=" +
-			  encodeURIComponent(
-				titlex
-			  );
-
-
-			console.log(
-			  "Loaded:",
-			  fileName
-			);
-
-
-			/*
-			 * ========================================================
-			 * CONVERT LEGACY BASE64 TO UINT8ARRAY
-			 * ========================================================
-			 */
-
-			setPDFProgress(
-			  98
-			);
-
-
-			var binary =
-			  atob(
-				raw
-			  );
-
-
-			var legacyBytes =
-			  new Uint8Array(
-				binary.length
-			  );
-
-
-			for (
-			  var k = 0;
-			  k < binary.length;
-			  k++
-			) {
-
-			  legacyBytes[k] =
-				binary.charCodeAt(k);
-
-			}
-
-
-			var dataParams = {
-			  data:
-				legacyBytes
-			};
-
-
-			/*
-			 * --------------------------------------------------------
-			 * Legacy workflow is ready.
-			 *
-			 * Complete the progress bar.
-			 * --------------------------------------------------------
-			 */
-
-			completePDFProgress();
-
-
-			/*
-			 * --------------------------------------------------------
-			 * Jump directly to PDF.js.
-			 * --------------------------------------------------------
-			 */
-
-			_context7.next =
-			  80;
-
-
-			break;
-
-
-			/*
-			 * ========================================================
-			 * NEW GZIP FRAGMENT WORKFLOW
-			 * ========================================================
-			 */
-
-			case 30:
-
-			  /*
-			   * ------------------------------------------------------
-			   * Metadata exists, so parse it.
-			   * ------------------------------------------------------
-			   */
-
-			  _context7.next =
-				32;
-
-
-			  return fragmentResponse.json();
-
-
-			case 32:
-
-			  var metadata =
-				_context7.sent;
-
-
-			/*
-			 * --------------------------------------------------------
-			 * Metadata error
-			 * --------------------------------------------------------
-			 */
-
-			if (
-			  metadata.error
-			) {
-
-			  setPDFProgress(
-				0
-			  );
-
-
-			  throw new Error(
-				metadata.error
-			  );
-
-			}
-
-
-			/*
-			 * ========================================================
-			 * FRAGMENT COUNT
-			 * ========================================================
-			 */
-
-			var fragmentCount =
-			  Number(
-				metadata.fragmentCount
-			  );
-
-
-			if (
-			  !Number.isInteger(
-				fragmentCount
-			  ) ||
-			  fragmentCount < 1
-			) {
-
-			  setPDFProgress(
-				0
-			  );
-
-
-			  throw new Error(
-				"Invalid fragmentCount in metadata."
-			  );
-
-			}
-
-
-			/*
-			 * ========================================================
-			 * DOCUMENT METADATA
-			 * ========================================================
-			 */
-
-			var gzipFileName =
-			  metadata.originalFileName ||
-			  titlex;
-
-
-			document.title =
-			  gzipFileName;
-
-
-			console.log(
-			  "GZIP document found:",
-			  fragmentHash
-			);
-
-
-			console.log(
-			  "Fragments:",
-			  fragmentCount
-			);
-
-
-			/*
-			 * ========================================================
-			 * GZIP PROGRESS
-			 * ========================================================
-			 *
-			 * Progress allocation:
-			 *
-			 *     0–5%    metadata
-			 *
-			 *     5–80%   fragment downloads
-			 *
-			 *     80–90%  combining fragments
-			 *
-			 *     90–97%  gzip decompression
-			 *
-			 *     97–100% PDF handoff
-			 * ========================================================
-			 */
-
-			setPDFProgress(
-			  5
-			);
-
-
-			/*
-			 * ========================================================
-			 * FRAGMENT STORAGE
-			 * ========================================================
-			 */
-
-			var fragmentBuffers =
-			  [];
-
-
-			var fragmentPromise =
-			  Promise.resolve();
-
-
-			/*
-			 * ========================================================
-			 * DOWNLOAD FRAGMENTS
-			 * ========================================================
-			 *
-			 * Files:
-			 *
-			 *     HASH.0
-			 *     HASH.1
-			 *     HASH.2
-			 *     ...
-			 *
-			 * There is intentionally no fragments[] array in the
-			 * metadata.
-			 * ========================================================
-			 */
-
-			for (
-			  var i = 0;
-			  i < fragmentCount;
-			  i++
-			) {
-
-			  fragmentPromise =
-				fragmentPromise.then(
-
-				  function(index) {
-
-					return function() {
-
-					  /*
-					   * ------------------------------------------------
-					   * Progress before this fragment.
-					   *
-					   * 5% → 80%
-					   * ------------------------------------------------
-					   */
-
-					  var startProgress =
-						5 +
-						(
-						  index /
-						  fragmentCount
-						) *
-						75;
-
-
-					  setPDFProgress(
-						startProgress
-					  );
-
-
-					  var fragmentUrl =
-						fragmentBase +
-						fragmentHash +
-						"." +
-						index;
-
-
-					  console.log(
-						"Loading fragment:",
-						fragmentUrl
-					  );
-
-
-					  return fetch(
-						fragmentUrl,
-						{
-						  method: "GET",
-						  cache: "no-cache"
-						}
-					  ).then(
-
-						function(
-						  fragmentResponse
-						) {
-
-						  if (
-							!fragmentResponse.ok
-						  ) {
-
-							throw new Error(
-							  "Unable to load fragment " +
-							  index +
-							  ": HTTP " +
-							  fragmentResponse.status
-							);
-
-						  }
-
-
-						  return fragmentResponse
-							.arrayBuffer();
-
-						}
-
-					  ).then(
-
-						function(
-						  buffer
-						) {
-
-						  /*
-						   * ------------------------------------------------
-						   * Store by index.
-						   * ------------------------------------------------
-						   */
-
-						  fragmentBuffers[index] =
-							buffer;
-
-
-						  /*
-						   * ------------------------------------------------
-						   * Calculate actual fragment progress.
-						   * ------------------------------------------------
-						   */
-
-						  var completed =
-							index + 1;
-
-
-						  var progress =
-							5 +
-							(
-							  completed /
-							  fragmentCount
-							) *
-							75;
-
-
-						  setPDFProgress(
-							progress
-						  );
-
-
-						  console.log(
-							"Fragment " +
-							completed +
-							" / " +
-							fragmentCount +
-							" loaded."
-						  );
-
-						}
-
-					  );
-
-					};
-
-				  }(
-					i
-				  )
-
-				);
-
-			}
-
-
-			/*
-			 * ========================================================
-			 * WAIT FOR ALL FRAGMENTS
-			 * ========================================================
-			 */
-
-			_context7.next =
-			  50;
-
-
-			return fragmentPromise;
-
-
-			case 50:
-
-			  /*
-			   * ======================================================
-			   * ALL FRAGMENTS DOWNLOADED
-			   * ======================================================
-			   */
-
-			  setPDFProgress(
-				80
-			  );
-
-
-			  /*
-			   * ======================================================
-			   * COMBINE FRAGMENTS
-			   * ======================================================
-			   */
-
-			  var totalLength =
-				fragmentBuffers.reduce(
-
-				  function(
-					total,
-					buffer
-				  ) {
-
-					return (
-					  total +
-					  buffer.byteLength
-					);
-
-				  },
-
-				  0
-
-				);
-
-
-			  var compressedData =
-				new Uint8Array(
-				  totalLength
-				);
-
-
-			  var offset =
-				0;
-
-
-			  for (
-				var j = 0;
-				j < fragmentBuffers.length;
-				j++
-			  ) {
-
-				var fragment =
-				  new Uint8Array(
-					fragmentBuffers[j]
-				  );
-
-
-				compressedData.set(
-				  fragment,
-				  offset
-				);
-
-
-				offset +=
-				  fragment.length;
+				var fragmentResponse = _context7.sent;
 
 
 				/*
-				 * ----------------------------------------------------
-				 * 80% → 90%
-				 * ----------------------------------------------------
+				 * ========================================================
+				 * SELECT WORKFLOW
+				 * ========================================================
+				 *
+				 * If hash.json exists:
+				 *
+				 *     GZIP workflow
+				 *
+				 * If hash.json does not exist:
+				 *
+				 *     Google Apps Script workflow
+				 * ========================================================
 				 */
 
-				var combineProgress =
-				  80 +
-				  (
-					(
-					  j + 1
-					) /
-					fragmentBuffers.length
-				  ) *
-				  10;
+				if (fragmentResponse.ok) {
+
+				  console.log("GZIP metadata found.");
+
+				  resetPDFProgress();
+				  setPDFProgress(2);
+
+				  _context7.next = 30;
+
+				} else {
+
+				  console.log("No GZIP fragment found. Using legacy workflow.");
+
+				  startLegacyProgress();
+
+				  _context7.next = 10;
+				}
+
+				break;
 
 
-				setPDFProgress(
-				  combineProgress
-				);
+			  /*
+			   * ========================================================
+			   * LEGACY GOOGLE APPS SCRIPT WORKFLOW
+			   * ========================================================
+			   */
 
-			  }
+			  case 10:
 
+				_context7.next = 12;
 
-			  console.log(
-				"Combined gzip size:",
-				compressedData.length
-			  );
-
-
-			/*
-			 * ========================================================
-			 * DECOMPRESS GZIP
-			 * ========================================================
-			 */
-
-			if (
-			  typeof DecompressionStream ===
-			  "undefined"
-			) {
-
-			  setPDFProgress(
-				0
-			  );
-
-
-			  throw new Error(
-				"This browser does not support gzip decompression."
-			  );
-
-			}
-
-
-			setPDFProgress(
-			  90
-			);
-
-
-			var decompressionStream =
-			  new DecompressionStream(
-				"gzip"
-			  );
-
-
-			var decompressedStream =
-			  new Blob([
-				compressedData
-			  ])
-				.stream()
-				.pipeThrough(
-				  decompressionStream
+				return fetch(
+				  "https://script.google.com/macros/s/" +
+				  endpoint +
+				  "/exec?export=view" +
+				  "&base=" + encodeURIComponent(viewno) +
+				  "&field=" + encodeURIComponent(titlex) +
+				  "&hash=" + legacyHash
 				);
 
 
-			/*
-			 * ========================================================
-			 * GET DECOMPRESSED PDF
-			 * ========================================================
-			 */
+			  case 12:
 
-			_context7.next =
-			  60;
+				var response = _context7.sent;
 
+				stopProgressTimer();
 
-			return new Response(
-			  decompressedStream
-			).arrayBuffer();
+				if (!response.ok) {
+				  setPDFProgress(0);
 
+				  throw new Error("HTTP " + response.status);
+				}
 
-			case 60:
+				setPDFProgress(96);
 
-			  var pdfBuffer =
-				_context7.sent;
+				_context7.next = 16;
+
+				return response.json();
 
 
-			/*
-			 * ========================================================
-			 * GZIP PDF IS READY
-			 * ========================================================
-			 */
+			  case 16:
 
-			setPDFProgress(
-			  97
-			);
+				var json = _context7.sent;
 
+				if (json.error) {
+				  setPDFProgress(0);
 
-			var fileName =
-			  metadata.originalFileName ||
-			  (
-				fragmentHash +
-				".pdf"
-			  );
+				  console.error("Server error:", json.error);
 
+				  throw new Error(json.error);
+				}
 
-			console.log(
-			  "Loaded:",
-			  fileName
-			);
+				var raw = json.data;
+				var fileName = json.name;
 
+				document.title = json.field;
 
-			console.log(
-			  "PDF size:",
-			  pdfBuffer.byteLength,
-			  "bytes"
-			);
+				var altDownloadUrl =
+				  "https://thsconline.github.io/s/?download=" +
+				  encodeURIComponent(viewno) +
+				  "&n=" +
+				  encodeURIComponent(titlex);
 
+				console.log("Loaded:", fileName);
 
-			/*
-			 * ========================================================
-			 * PDF.JS DATA
-			 * ========================================================
-			 */
+				setPDFProgress(98);
 
-			var dataParams = {
-			  data:
-				new Uint8Array(
-				  pdfBuffer
-				)
-			};
+				var binary = atob(raw);
 
+				var legacyBytes = new Uint8Array(binary.length);
 
-			/*
-			 * --------------------------------------------------------
-			 * PDF data is ready.
-			 * --------------------------------------------------------
-			 */
+				for (var k = 0; k < binary.length; k++) {
+				  legacyBytes[k] = binary.charCodeAt(k);
+				}
 
-			completePDFProgress();
+				var dataParams = {
+				  data: legacyBytes
+				};
+
+				completePDFProgress();
+
+				_context7.next = 80;
+
+				break;
 
 
-			/*
-			 * ========================================================
-			 * BOTH WORKFLOWS CONVERGE HERE
-			 * ========================================================
-			 */
+			  /*
+			   * ========================================================
+			   * NEW GZIP FRAGMENT WORKFLOW
+			   * ========================================================
+			   */
 
-			_context7.next =
-			  80;
+			  case 30:
+
+				_context7.next = 32;
+
+				return fragmentResponse.json();
 
 
-			break;
+			  case 32:
+
+				var metadata = _context7.sent;
+
+				if (metadata.error) {
+				  setPDFProgress(0);
+
+				  throw new Error(metadata.error);
+				}
 
 
-			/*
-			 * ========================================================
-			 * PDF.JS
-			 * ========================================================
-			 */
+				/*
+				 * ========================================================
+				 * FRAGMENT COUNT
+				 * ========================================================
+				 */
 
-			case 80:
+				var fragmentCount = Number(metadata.fragmentCount);
+
+				if (!Number.isInteger(fragmentCount) || fragmentCount < 1) {
+				  setPDFProgress(0);
+
+				  throw new Error("Invalid fragmentCount in metadata.");
+				}
+
+
+				/*
+				 * ========================================================
+				 * DOCUMENT METADATA
+				 * ========================================================
+				 */
+
+				var gzipFileName = metadata.originalFileName || titlex;
+
+				document.title = gzipFileName;
+
+				console.log("GZIP document found:", fragmentHash);
+				console.log("Fragments:", fragmentCount);
+
+
+				/*
+				 * ========================================================
+				 * GZIP PROGRESS
+				 * ========================================================
+				 *
+				 * 0–5%    metadata
+				 * 5–80%   fragment downloads
+				 * 80–90%  combining fragments
+				 * 90–97%  gzip decompression
+				 * 97–100% PDF handoff
+				 * ========================================================
+				 */
+
+				setPDFProgress(5);
+
+
+				/*
+				 * ========================================================
+				 * FRAGMENT STORAGE
+				 * ========================================================
+				 */
+
+				var fragmentBuffers = [];
+				var fragmentPromise = Promise.resolve();
+
+
+				/*
+				 * ========================================================
+				 * DOWNLOAD FRAGMENTS
+				 * ========================================================
+				 */
+
+				for (var i = 0; i < fragmentCount; i++) {
+
+				  fragmentPromise = fragmentPromise.then(
+					function(index) {
+
+					  return function() {
+
+						var startProgress =
+						  5 + (index / fragmentCount) * 75;
+
+						setPDFProgress(startProgress);
+
+
+						/*
+						 * --------------------------------------------------
+						 * Construct fragment URL.
+						 * --------------------------------------------------
+						 */
+
+						var fragmentUrl =
+						  fragmentBase +
+						  fragmentHash +
+						  "." +
+						  index;
+
+
+						/*
+						 * --------------------------------------------------
+						 * SHOW HASH IMMEDIATELY BEFORE FETCH
+						 * --------------------------------------------------
+						 */
+
+						alert(
+						  "GZIP FRAGMENT FETCH\n\n" +
+						  "fragmentHash: " + String(fragmentHash) + "\n" +
+						  "fragmentHash type: " + typeof fragmentHash + "\n\n" +
+						  "index: " + String(index) + "\n\n" +
+						  "fragment URL:\n" + fragmentUrl
+						);
+
+
+						console.log(
+						  "Loading fragment:",
+						  fragmentUrl
+						);
+
+
+						return fetch(fragmentUrl, {
+						  method: "GET",
+						  cache: "no-cache"
+						}).then(
+						  function(fragmentResponse) {
+
+							if (!fragmentResponse.ok) {
+							  throw new Error(
+								"Unable to load fragment " +
+								index +
+								": HTTP " +
+								fragmentResponse.status
+							  );
+							}
+
+							return fragmentResponse.arrayBuffer();
+						  }
+						).then(
+						  function(buffer) {
+
+							fragmentBuffers[index] = buffer;
+
+							var completed = index + 1;
+
+							var progress =
+							  5 +
+							  (completed / fragmentCount) *
+							  75;
+
+							setPDFProgress(progress);
+
+							console.log(
+							  "Fragment " +
+							  completed +
+							  " / " +
+							  fragmentCount +
+							  " loaded."
+							);
+						  }
+						);
+					  };
+
+					}(i)
+				  );
+				}
+
+
+				/*
+				 * ========================================================
+				 * WAIT FOR ALL FRAGMENTS
+				 * ========================================================
+				 */
+
+				_context7.next = 50;
+
+				return fragmentPromise;
+
+
+			  case 50:
+
+				/*
+				 * ========================================================
+				 * ALL FRAGMENTS DOWNLOADED
+				 * ========================================================
+				 */
+
+				setPDFProgress(80);
+
+
+				/*
+				 * ========================================================
+				 * COMBINE FRAGMENTS
+				 * ========================================================
+				 */
+
+				var totalLength = fragmentBuffers.reduce(
+				  function(total, buffer) {
+					return total + buffer.byteLength;
+				  },
+				  0
+				);
+
+				var compressedData = new Uint8Array(totalLength);
+
+				var offset = 0;
+
+				for (var j = 0; j < fragmentBuffers.length; j++) {
+
+				  var fragment = new Uint8Array(fragmentBuffers[j]);
+
+				  compressedData.set(fragment, offset);
+
+				  offset += fragment.length;
+
+				  var combineProgress =
+					80 +
+					((j + 1) / fragmentBuffers.length) *
+					10;
+
+				  setPDFProgress(combineProgress);
+				}
+
+				console.log(
+				  "Combined gzip size:",
+				  compressedData.length
+				);
+
+
+				/*
+				 * ========================================================
+				 * DECOMPRESS GZIP
+				 * ========================================================
+				 */
+
+				if (typeof DecompressionStream === "undefined") {
+				  setPDFProgress(0);
+
+				  throw new Error(
+					"This browser does not support gzip decompression."
+				  );
+				}
+
+				setPDFProgress(90);
+
+				var decompressionStream =
+				  new DecompressionStream("gzip");
+
+				var decompressedStream =
+				  new Blob([compressedData])
+					.stream()
+					.pipeThrough(decompressionStream);
+
+
+				/*
+				 * ========================================================
+				 * GET DECOMPRESSED PDF
+				 * ========================================================
+				 */
+
+				_context7.next = 60;
+
+				return new Response(
+				  decompressedStream
+				).arrayBuffer();
+
+
+			  case 60:
+
+				var pdfBuffer = _context7.sent;
+
+
+				/*
+				 * ========================================================
+				 * GZIP PDF IS READY
+				 * ========================================================
+				 */
+
+				setPDFProgress(97);
+
+				var fileName =
+				  metadata.originalFileName ||
+				  (fragmentHash + ".pdf");
+
+				console.log("Loaded:", fileName);
+
+				console.log(
+				  "PDF size:",
+				  pdfBuffer.byteLength,
+				  "bytes"
+				);
+
+
+				/*
+				 * ========================================================
+				 * PDF.JS DATA
+				 * ========================================================
+				 */
+
+				var dataParams = {
+				  data: new Uint8Array(pdfBuffer)
+				};
+
+
+				/*
+				 * ========================================================
+				 * PDF DATA IS READY
+				 * ========================================================
+				 */
+
+				completePDFProgress();
+
+
+				/*
+				 * ========================================================
+				 * BOTH WORKFLOWS CONVERGE HERE
+				 * ========================================================
+				 */
+
+				_context7.next = 80;
+
+				break;
+
+
+			  /*
+			   * ========================================================
+			   * PDF.JS
+			   * ========================================================
+			   */
+
+			  case 80:
+
 
 
 			  var loadingTask =
