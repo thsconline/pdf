@@ -948,6 +948,8 @@ open: function() {
     /*#__PURE__*/
     _regenerator["default"].mark(function _callee7(file, args) {
       var _this2 = this;
+	  _this2.fileName = null;
+
 
       return _regenerator["default"].wrap(function _callee7$(_context7) {
         while (1) {
@@ -1001,7 +1003,7 @@ open: function() {
 
               /*
                * ========================================================
-               * PRODUCTION
+               * PRODUCTION FILE LOADER
                * ========================================================
                */
 
@@ -1454,34 +1456,6 @@ open: function() {
 
 
               /*
-               * --------------------------------------------------------
-               * Debug GZIP values.
-               * --------------------------------------------------------
-               */
-
-              alert(
-                "GZIP VALUES\n\n" +
-                "viewno:\n" +
-                String(this._thscLoader.viewno) +
-                "\n\n" +
-                "titlex:\n" +
-                String(this._thscLoader.titlex) +
-                "\n\n" +
-                "fragmentBase:\n" +
-                String(this._thscLoader.fragmentBase) +
-                "\n\n" +
-                "fragmentHash:\n" +
-                String(this._thscLoader.fragmentHash) +
-                "\n\n" +
-                "metadata.hash:\n" +
-                String(this._thscLoader.gzipHash) +
-                "\n\n" +
-                "fragmentCount:\n" +
-                String(this._thscLoader.fragmentCount)
-              );
-
-
-              /*
                * ========================================================
                * GZIP PROGRESS
                * ========================================================
@@ -1844,6 +1818,14 @@ open: function() {
                */
 
             case 80:
+
+				/* Ensure filename exists */
+			  if (!this._thscLoader.fileName) {
+				this._thscLoader.fileName = "document.pdf";
+			  }
+
+			  this.fileName = this._thscLoader.fileName;
+
 
               var loadingTask =
                 (0, _pdfjsLib.getDocument)(
