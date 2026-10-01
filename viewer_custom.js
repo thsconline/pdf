@@ -1023,7 +1023,7 @@ open: function() {
                 viewno: params.get("base"),
                 titlex: params.get("field"),
                 endpoint: params.get("w"),
-
+				forceLegacy: params.get("legacy") === "1" || params.get("gs") === "1",
                 legacyHash: null,
                 fragmentHash: null,
 
@@ -1040,7 +1040,7 @@ open: function() {
                 dataParams: null,
                 fileName: null
               };
-
+				
 
               /*
                * --------------------------------------------------------
@@ -1219,29 +1219,28 @@ open: function() {
                * SELECT WORKFLOW
                * ========================================================
                */
+			
+              if (this._thscLoader.forceLegacy) {
 
-              if (fragmentResponse.ok) {
+				  startLegacyProgress();
 
-                console.log(
-                  "GZIP metadata found."
-                );
+				  _context7.next = 10;
 
-                resetPDFProgress();
+				} else if (fragmentResponse.ok) {
 
-                setPDFProgress(2);
+				  resetPDFProgress();
 
-                _context7.next = 30;
+				  setPDFProgress(2);
 
-              } else {
+				  _context7.next = 30;
 
-                console.log(
-                  "No GZIP fragment found. Using legacy workflow."
-                );
+				} else {
 
-                startLegacyProgress();
+				  startLegacyProgress();
 
-                _context7.next = 10;
-              }
+				  _context7.next = 10;
+				}
+
 
               break;
 
