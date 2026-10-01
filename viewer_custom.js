@@ -1518,38 +1518,6 @@ open: function() {
                           "." +
                           index;
 
-
-                        /*
-                         * ------------------------------------------------
-                         * Debug immediately before fetch.
-                         * ------------------------------------------------
-                         */
-
-                        alert(
-                          "GZIP FRAGMENT FETCH\n\n" +
-                          "viewno:\n" +
-                          String(currentLoader.viewno) +
-                          "\n\n" +
-                          "titlex:\n" +
-                          String(currentLoader.titlex) +
-                          "\n\n" +
-                          "fragmentBase:\n" +
-                          String(currentLoader.fragmentBase) +
-                          "\n\n" +
-                          "fragmentHash:\n" +
-                          String(currentLoader.fragmentHash) +
-                          "\n\n" +
-                          "gzipHash:\n" +
-                          String(currentLoader.gzipHash) +
-                          "\n\n" +
-                          "index:\n" +
-                          String(index) +
-                          "\n\n" +
-                          "fragmentUrl:\n" +
-                          fragmentUrl
-                        );
-
-
                         return fetch(
                           fragmentUrl,
                           {
