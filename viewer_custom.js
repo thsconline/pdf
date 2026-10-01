@@ -1139,7 +1139,6 @@ open: function () {
 
 			  var fragmentHash = SHA256(viewno + "_" + titlex);
 
-
 			  /*
 			   * --------------------------------------------------------
 			   * Debug calculated hash
