@@ -1360,6 +1360,12 @@ open: function () {
 			  );
 
 
+			console.log("viewno:", viewno);
+			console.log("titlex:", titlex);
+			console.log("legacyHash:", legacyHash);
+			console.log("fragmentHash:", fragmentHash);
+			console.log("metadataUrl:", metadataUrl);
+
 			/*
 			 * ========================================================
 			 * GZIP FRAGMENT REPOSITORY
