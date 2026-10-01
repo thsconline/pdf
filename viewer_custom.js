@@ -408,6 +408,7 @@ var PDFViewerApplication = {
   externalServices: DefaultExternalServices,
   _boundEvents: {},
   contentDispositionFilename: null,
+  
   initialize: function () {
     var _initialize = _asyncToGenerator(
     /*#__PURE__*/
@@ -947,8 +948,7 @@ open: function() {
   var _open = _asyncToGenerator(
     /*#__PURE__*/
     _regenerator["default"].mark(function _callee7(file, args) {
-      var _this2 = this;
-	  _this2.fileName = null;
+      var _this2 = this;	  
 
 
       return _regenerator["default"].wrap(function _callee7$(_context7) {
@@ -1788,11 +1788,11 @@ open: function() {
 
 				/* Ensure filename exists */
 			  if (!this._thscLoader.fileName) {
-				this._thscLoader.fileName = "document.pdf";
+				this._thscLoader.fileName = "404_html.pdf";
 			  }
 
-			  this.fileName = this._thscLoader.fileName;
-
+			  this.contentDispositionFilename = this._thscLoader.fileName;
+			  
 
               var loadingTask =
                 (0, _pdfjsLib.getDocument)(
