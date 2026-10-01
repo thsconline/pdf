@@ -1953,7 +1953,12 @@ open: function() {
     }
 
     var url = this.baseUrl;
-    var filename = this.contentDispositionFilename || (0, _ui_utils.getPDFFileNameFromURL)(this.url);
+	
+	// Download hotfix 2-10-2026
+    var filename = this.contentDispositionFilename || document.title || (0, _ui_utils.getPDFFileNameFromURL)(this.url); // Hotfix to get title
+	if (!/\.pdf$/i.test(filename)) {
+	  filename += ".pdf";
+	}
     var downloadManager = this.downloadManager;
 
     downloadManager.onerror = function (err) {
