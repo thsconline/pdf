@@ -1000,80 +1000,583 @@ open: function () {
               }
             }
 
+			/*
+			 * Production file loader
+			 */
 
-            /*
-             * Production file loader
-             */
+			var params = new URLSearchParams(window.location.search);
 
-            var params = new URLSearchParams(window.location.search);
-
-            var viewno = params.get("base");
-            var titlex = params.get("field");
+			var viewno = params.get("base");
+			var titlex = params.get("field");
 			var endpoint = params.get("w");
-				
 
-            if (!viewno || !titlex || !endpoint) {
-              throw new Error("405 Method Not Allowed: Missing parameter.");
-            }
-
-            var hashvalue = SHA256(viewno);
-			
-            _context7.next = 19;
-
-            return fetch(
-              "https://script.google.com/macros/s/" + endpoint + 
-              "/exec?export=view" +
-              "&base=" + encodeURIComponent(viewno) +
-              "&field=" + encodeURIComponent(titlex) +
-              "&hash=" + hashvalue
-            );
+			if (!viewno || !titlex || !endpoint) {
+			  throw new Error("405 Method Not Allowed: Missing parameter.");
+			}
 
 
-          case 19:
+			/*
+			 * --------------------------------------------------------
+			 * Loading message
+			 * --------------------------------------------------------
+			 */
 
-            var response = _context7.sent;
+			var loadingMessage =
+			  document.getElementById("thsc-loading-message");
+
+			if (!loadingMessage) {
+
+			  loadingMessage =
+				document.createElement("div");
+
+			  loadingMessage.id =
+				"thsc-loading-message";
+
+			  loadingMessage.style.position =
+				"fixed";
+
+			  loadingMessage.style.top =
+				"0";
+
+			  loadingMessage.style.left =
+				"0";
+
+			  loadingMessage.style.right =
+				"0";
+
+			  loadingMessage.style.bottom =
+				"0";
+
+			  loadingMessage.style.background =
+				"#ffffff";
+
+			  loadingMessage.style.display =
+				"flex";
+
+			  loadingMessage.style.alignItems =
+				"center";
+
+			  loadingMessage.style.justifyContent =
+				"center";
+
+			  loadingMessage.style.zIndex =
+				"999999";
+
+			  loadingMessage.style.fontFamily =
+				"Arial, sans-serif";
+
+			  loadingMessage.style.fontSize =
+				"18px";
+
+			  loadingMessage.style.color =
+				"#444";
+
+			  document.body.appendChild(
+				loadingMessage
+			  );
+			}
 
 
-            if (response.ok) {
-              _context7.next = 22;
-              break;
-            }
-
-            throw new Error("HTTP " + response.status);
+			loadingMessage.textContent =
+			  "Loading document...";
 
 
-          case 22:
+			/*
+			 * --------------------------------------------------------
+			 * Hashes
+			 * --------------------------------------------------------
+			 *
+			 * Legacy workflow:
+			 *     SHA256(viewno)
+			 *
+			 * GZIP fragment workflow:
+			 *     SHA256(viewno + "_" + titlex)
+			 */
 
-            _context7.next = 24;
-            return response.json();
+			var legacyHash =
+			  SHA256(viewno);
+
+			var fragmentHash =
+			  SHA256(viewno + "_" + titlex);
 
 
-          case 24:
+			/*
+			 * --------------------------------------------------------
+			 * GZIP fragment location
+			 * --------------------------------------------------------
+			 */
 
-            var json = _context7.sent;
+			var fragmentBase =
+			  "https://thsconline.github.io/r2_1f3d2925c3eff6cef4a2dc2d306685f68b1ab0e5029ffbe7a0c8232ad5f47eb1/";
 
 
-            if (json.error) {
-              console.error("Server error:", json.error);
-              throw new Error(json.error);
-            }
+			/*
+			 * --------------------------------------------------------
+			 * Check for GZIP version
+			 * --------------------------------------------------------
+			 */
+
+			var metadataUrl =
+			  fragmentBase +
+			  fragmentHash +
+			  ".json";
 
 
-            const raw = json.data;
-            const fileName = json.name;
-			document.title = json.field;
-            const altDownloadUrl =
-              "https://thsconline.github.io/s/?download=" +
-              encodeURIComponent(viewno) +
-              "&n=" +
-              encodeURIComponent(titlex);
+			loadingMessage.textContent =
+			  "Checking document...";
 
-            console.log("Loaded:", fileName);
 
-            var dataParams = {
-              data: atob(raw)
-            };
-			
+			_context7.next = 6;
+
+			return fetch(
+			  metadataUrl,
+			  {
+				method: "GET",
+				cache: "no-cache"
+			  }
+			);
+
+
+			case 6:
+
+			  var fragmentResponse =
+				_context7.sent;
+
+
+			/*
+			 * ========================================================
+			 * LEGACY WORKFLOW
+			 * ========================================================
+			 */
+
+			if (!fragmentResponse.ok) {
+
+			  console.log(
+				"No GZIP fragment found. Using legacy workflow."
+			  );
+
+
+			  loadingMessage.textContent =
+				"Loading document...";
+
+
+			  _context7.next = 19;
+
+			  return fetch(
+				"https://script.google.com/macros/s/" +
+				endpoint +
+				"/exec?export=view" +
+				"&base=" +
+				encodeURIComponent(viewno) +
+				"&field=" +
+				encodeURIComponent(titlex) +
+				"&hash=" +
+				legacyHash
+			  );
+
+
+			  case 19:
+
+				var response =
+				  _context7.sent;
+
+
+				if (response.ok) {
+
+				  _context7.next = 22;
+
+				  break;
+				}
+
+
+				if (loadingMessage) {
+				  loadingMessage.remove();
+				}
+
+
+				throw new Error(
+				  "HTTP " + response.status
+				);
+
+
+			  case 22:
+
+				loadingMessage.textContent =
+				  "Preparing document...";
+
+
+				_context7.next = 24;
+
+				return response.json();
+
+
+			  case 24:
+
+				var json =
+				  _context7.sent;
+
+
+				if (json.error) {
+
+				  if (loadingMessage) {
+					loadingMessage.remove();
+				  }
+
+				  console.error(
+					"Server error:",
+					json.error
+				  );
+
+				  throw new Error(
+					json.error
+				  );
+				}
+
+
+				var raw =
+				  json.data;
+
+				var fileName =
+				  json.name;
+
+
+				document.title =
+				  json.field;
+
+
+				var altDownloadUrl =
+				  "https://thsconline.github.io/s/?download=" +
+				  encodeURIComponent(viewno) +
+				  "&n=" +
+				  encodeURIComponent(titlex);
+
+
+				console.log(
+				  "Loaded:",
+				  fileName
+				);
+
+
+				var dataParams = {
+				  data: atob(raw)
+				};
+
+
+				_context7.next = 80;
+
+				break;
+			}
+
+
+			/*
+			 * ========================================================
+			 * NEW GZIP FRAGMENT WORKFLOW
+			 * ========================================================
+			 */
+
+			_context7.next = 30;
+
+			return fragmentResponse.json();
+
+
+			case 30:
+
+			  var metadata =
+				_context7.sent;
+
+
+			  if (metadata.error) {
+
+				if (loadingMessage) {
+				  loadingMessage.remove();
+				}
+
+				throw new Error(
+				  metadata.error
+				);
+			  }
+
+
+			  var fragmentCount =
+				Number(metadata.fragmentCount);
+
+
+			  if (
+				!Number.isInteger(fragmentCount) ||
+				fragmentCount < 1
+			  ) {
+
+				if (loadingMessage) {
+				  loadingMessage.remove();
+				}
+
+				throw new Error(
+				  "Invalid fragmentCount in metadata."
+				);
+			  }
+
+
+			  document.title =
+				metadata.originalFileName ||
+				titlex;
+
+
+			  console.log(
+				"GZIP document found:",
+				fragmentHash
+			  );
+
+			  console.log(
+				"Fragments:",
+				fragmentCount
+			  );
+
+
+			  /*
+			   * ------------------------------------------------------
+			   * Download fragments
+			   * ------------------------------------------------------
+			   */
+
+			  var fragmentBuffers = [];
+
+			  var fragmentPromise =
+				Promise.resolve();
+
+
+			  for (
+				var i = 0;
+				i < fragmentCount;
+				i++
+			  ) {
+
+				fragmentPromise =
+				  fragmentPromise.then(
+					function(index) {
+
+					  return function() {
+
+						loadingMessage.textContent =
+						  "Loading document... " +
+						  (index + 1) +
+						  " / " +
+						  fragmentCount;
+
+
+						var fragmentUrl =
+						  fragmentBase +
+						  fragmentHash +
+						  "." +
+						  index;
+
+
+						console.log(
+						  "Loading fragment:",
+						  fragmentUrl
+						);
+
+
+						return fetch(
+						  fragmentUrl,
+						  {
+							method: "GET",
+							cache: "no-cache"
+						  }
+						).then(
+						  function(fragmentResponse) {
+
+							if (!fragmentResponse.ok) {
+
+							  throw new Error(
+								"Unable to load fragment " +
+								index +
+								": HTTP " +
+								fragmentResponse.status
+							  );
+							}
+
+
+							return fragmentResponse.arrayBuffer();
+
+						  }
+						).then(
+						  function(buffer) {
+
+							/*
+							 * Store by index rather than push,
+							 * so ordering is guaranteed.
+							 */
+
+							fragmentBuffers[index] =
+							  buffer;
+
+						  }
+						);
+
+					  };
+
+					}(i)
+				  );
+			  }
+
+
+			  _context7.next = 50;
+
+			  return fragmentPromise;
+
+
+			case 50:
+
+			  /*
+			   * ------------------------------------------------------
+			   * Combine fragments
+			   * ------------------------------------------------------
+			   */
+
+			  loadingMessage.textContent =
+				"Preparing document...";
+
+
+			  var totalLength =
+				fragmentBuffers.reduce(
+				  function(total, buffer) {
+					return total + buffer.byteLength;
+				  },
+				  0
+				);
+
+
+			  var compressedData =
+				new Uint8Array(totalLength);
+
+
+			  var offset = 0;
+
+
+			  for (
+				var j = 0;
+				j < fragmentBuffers.length;
+				j++
+			  ) {
+
+				var fragment =
+				  new Uint8Array(
+					fragmentBuffers[j]
+				  );
+
+
+				compressedData.set(
+				  fragment,
+				  offset
+				);
+
+
+				offset += fragment.length;
+			  }
+
+
+			  console.log(
+				"Combined gzip size:",
+				compressedData.length
+			  );
+
+
+			  /*
+			   * ------------------------------------------------------
+			   * Decompress gzip
+			   * ------------------------------------------------------
+			   */
+
+			  if (
+				typeof DecompressionStream ===
+				"undefined"
+			  ) {
+
+				if (loadingMessage) {
+				  loadingMessage.remove();
+				}
+
+				throw new Error(
+				  "This browser does not support gzip decompression."
+				);
+			  }
+
+
+			  loadingMessage.textContent =
+				"Decompressing document...";
+
+
+			  var decompressionStream =
+				new DecompressionStream("gzip");
+
+
+			  var decompressedStream =
+				new Blob([
+				  compressedData
+				])
+				  .stream()
+				  .pipeThrough(
+					decompressionStream
+				  );
+
+
+			  _context7.next = 60;
+
+			  return new Response(
+				decompressedStream
+			  ).arrayBuffer();
+
+
+			case 60:
+
+			  var pdfBuffer =
+				_context7.sent;
+
+
+			  /*
+			   * ------------------------------------------------------
+			   * Remove loading message
+			   * ------------------------------------------------------
+			   */
+
+			  if (loadingMessage) {
+				loadingMessage.remove();
+			  }
+
+
+			  /*
+			   * ------------------------------------------------------
+			   * PDF.js data
+			   * ------------------------------------------------------
+			   */
+
+			  var fileName =
+				metadata.originalFileName ||
+				(fragmentHash + ".pdf");
+
+
+			  console.log(
+				"Loaded:",
+				fileName
+			  );
+
+
+			  console.log(
+				"PDF size:",
+				pdfBuffer.byteLength,
+				"bytes"
+			  );
+
+
+			  var dataParams = {
+				data: new Uint8Array(
+				  pdfBuffer
+				)
+			  };
+
+
+			case 80:
+
 
             var loadingTask = (0, _pdfjsLib.getDocument)(dataParams);
 
