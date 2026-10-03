@@ -1252,25 +1252,24 @@ open: function() {
                */
 
             case 10:
+				// 1. Initialize the safe base URL targeting your structured macros endpoint
+				const legacyUrlObject = new URL(
+				  "https://script.google.com/macros/s/" + (this._thscLoader.endpoint || "") + "/exec"
+				);
 
-              var legacyUrl =
-                "https://script.google.com/macros/s/" +
-                this._thscLoader.endpoint +
-                "/exec?export=view" +
-                "&base=" +
-                encodeURIComponent(this._thscLoader.viewno) +
-                "&field=" +
-                encodeURIComponent(this._thscLoader.titlex) +
-                "&hash=" +
-                this._thscLoader.legacyHash;
+				// 2. Map the required query strings safely (the API handles encoding automatically)
+				legacyUrlObject.searchParams.set("export", "view");
+				legacyUrlObject.searchParams.set("base", this._thscLoader.viewno || "");
+				legacyUrlObject.searchParams.set("field", this._thscLoader.titlex || "");
+				legacyUrlObject.searchParams.set("hash", this._thscLoader.legacyHash || "");
 
+				// 3. Extract the final clean string value representation for the execution pipeline
+				var legacyUrl = legacyUrlObject.href;
 
-              _context7.next = 12;
+				// 4. Proceed cleanly with your async generator/context execution steps
+				_context7.next = 12;
 
-              return fetch(
-                legacyUrl
-              );
-
+				return fetch(legacyUrl);
 
             case 12:
 
