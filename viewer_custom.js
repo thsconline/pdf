@@ -1025,12 +1025,8 @@ open: function() {
                 endpoint: params.get("w"),
 				forceLegacy: params.get("legacy") == "1" || params.get("gs") == "1",
                 legacyHash: null,
-                fragmentHash: null,
 
-                fragmentBase: "https://thsconline.github.io/r2_1f3d2925c3eff6cef4a2dc2d306685f68b1ab0e5029ffbe7a0c8232ad5f47eb1/",
-
-                metadataUrl: null,
-                gzipHash: null,
+                metadataUrl: null,                
 
                 fragmentCount: 0,
                 fragmentBuffers: [],
@@ -1167,16 +1163,12 @@ open: function() {
 
               /*
                * ========================================================
-               * HASHES
+               * HASHES - only needed for Google App Script
                * ========================================================
                */
 
               this._thscLoader.legacyHash = SHA256(
                 this._thscLoader.viewno
-              );
-
-              this._thscLoader.fragmentHash = SHA256(
-                this._thscLoader.viewno + "_" + this._thscLoader.titlex
               );
 
 
@@ -1186,11 +1178,11 @@ open: function() {
                * --------------------------------------------------------
                */
 
-              this._thscLoader.metadataUrl =
-                this._thscLoader.fragmentBase +
-                this._thscLoader.fragmentHash +
-                ".json";
-
+				this._thscLoader.metadataUrl =
+					"https://www.thsconline.net/api/v1/getmetadata/" +
+					encodeURIComponent(this._thscLoader.viewno) +
+					"/" +
+					encodeURIComponent(this._thscLoader.titlex);
 
               /*
                * ========================================================
@@ -1366,91 +1358,71 @@ open: function() {
                * ========================================================
                */
 
-            case 30:
+			case 30:
 
-              _context7.next = 32;
+				_context7.next = 32;
 
-              return fragmentResponse.json();
-
-
-            case 32:
-
-              this._thscLoader.metadata = _context7.sent;
+				return fragmentResponse.json();
 
 
-              /*
-               * --------------------------------------------------------
-               * Metadata error.
-               * --------------------------------------------------------
-               */
+			case 32:
 
-              if (this._thscLoader.metadata.error) {
-
-                setPDFProgress(0);
-
-                throw new Error(
-                  this._thscLoader.metadata.error
-                );
-              }
+				this._thscLoader.metadata = _context7.sent;
 
 
-              /*
-               * ========================================================
-               * HASH FROM METADATA
-               * ========================================================
-               */
+				/*
+				 * --------------------------------------------------------
+				 * Metadata error.
+				 * --------------------------------------------------------
+				 */
 
-              this._thscLoader.gzipHash =
-                this._thscLoader.metadata.hash;
+				if (this._thscLoader.metadata.error) {
 
+					setPDFProgress(0);
 
-              if (!this._thscLoader.gzipHash) {
-
-                setPDFProgress(0);
-
-                throw new Error(
-                  "GZIP metadata does not contain a hash."
-                );
-              }
+					throw new Error(
+						this._thscLoader.metadata.error
+					);
+				}
 
 
-              /*
-               * ========================================================
-               * FRAGMENT COUNT
-               * ========================================================
-               */
+				/*
+				 * ========================================================
+				 * FRAGMENT COUNT
+				 * ========================================================
+				 */
 
-              this._thscLoader.fragmentCount =
-                Number(
-                  this._thscLoader.metadata.fragmentCount
-                );
-
-
-              if (
-                !Number.isInteger(this._thscLoader.fragmentCount) ||
-                this._thscLoader.fragmentCount < 1
-              ) {
-
-                setPDFProgress(0);
-
-                throw new Error(
-                  "Invalid fragmentCount in metadata."
-                );
-              }
+				this._thscLoader.fragmentCount =
+					Number(
+						this._thscLoader.metadata.fragmentCount
+					);
 
 
-              /*
-               * ========================================================
-               * DOCUMENT METADATA
-               * ========================================================
-               */
+				if (
+					!Number.isInteger(this._thscLoader.fragmentCount) ||
+					this._thscLoader.fragmentCount < 1
+				) {
 
-              var gzipFileName =
-                this._thscLoader.metadata.originalFileName ||
-                this._thscLoader.titlex;
+					setPDFProgress(0);
+
+					throw new Error(
+						"Invalid fragmentCount from metadata."
+					);
+				}
 
 
-              document.title = gzipFileName;
+				/*
+				 * ========================================================
+				 * DOCUMENT METADATA
+				 * ========================================================
+				 */
+
+				var gzipFileName =
+					this._thscLoader.metadata.originalFileName ||
+					this._thscLoader.titlex;
+
+
+				document.title = gzipFileName;
 
 				/*
 				 * ========================================================
@@ -1484,10 +1456,13 @@ open: function() {
 					  var currentLoader = _this2._thscLoader;
 
 					  var fragmentUrl =
-						currentLoader.fragmentBase +
-						currentLoader.gzipHash +
-						"." +
-						index;
+					  "https://www.thsconline.net/api/v1/getfragment/" +
+					  encodeURIComponent(currentLoader.viewno) +
+					  "/" +
+					  encodeURIComponent(currentLoader.titlex) +
+					  "/" +
+					  index;
+
 
 
 					  /*
@@ -1876,7 +1851,7 @@ open: function() {
 				this._thscLoader.fileName =
 				  this._thscLoader.metadata.originalFileName ||
 				  (
-					this._thscLoader.gzipHash +
+					this._thscLoader.titlex +
 					".pdf"
 				  );
 
