@@ -341,7 +341,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 
 var DEFAULT_SCALE_DELTA = 1.1;
 var DISABLE_AUTO_FETCH_LOADING_BAR_TIMEOUT = 5000;
-var FORCE_PAGES_LOADED_TIMEOUT = 10000;
+var FORCE_PAGES_LOADED_TIMEOUT = 8000;
 var WHEEL_ZOOM_DISABLED_TIMEOUT = 1000;
 var ViewOnLoad = {
   UNKNOWN: -1,
