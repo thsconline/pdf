@@ -997,7 +997,7 @@ open: function() {
                 viewno: params.get("base"),
                 titlex: params.get("field"),
                 endpoint: params.get("w"),
-                forceLegacy: params.get("legacy") == "1" || params.get("gs") == "1",
+                forceLegacy: params.get("legacy") == "1" || params.get("gs") == "1" || params.get("base") == "fzwebspider",
                 legacyHash: null,
                 metadataUrl: null,
                 fragmentCount: 0,
